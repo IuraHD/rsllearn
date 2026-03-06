@@ -1,0 +1,1 @@
+from .achievement_service import check_achievements
