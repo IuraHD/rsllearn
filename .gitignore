@@ -177,15 +177,17 @@ coverage/
 # ==========================================
 
 # Training data (large files)
-rsl_detector/landmarks/
-rsl_detector/videos_dataset/
+RSLdataset/dataset/landmarks/
+RSLdataset/dataset/clips/
 
 # Trained models (large files)
-rsl_detector/models/
+RSLdataset/saved_models/*.h5
+RSLdataset/evaluation_outputs/
 backend/model_latest.h5
 
-# Keep classes.txt (small, needed)
-!rsl_detector/classes.txt
+# Keep classes.txt and metadata (small, needed)
+!RSLdataset/saved_models/sign_classes.txt
+!RSLdataset/saved_models/model_meta.txt
 
 # ==========================================
 # Project Specific

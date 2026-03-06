@@ -10,6 +10,7 @@ import cv2
 import numpy as np
 import os
 import argparse
+import time
 from tensorflow.keras.models import load_model
 from utils import (
     SAVED_MODELS_FOLDER, FRAMES_PER_SAMPLE,
@@ -122,8 +123,16 @@ def run(model_path=None):
         if len(buf) > seq_len: buf = buf[-seq_len:]
 
         if len(buf) == seq_len:
+            start_time = time.time()
             pred = model.predict(np.expand_dims(np.array(buf), 0), verbose=0)[0]
+            latency = (time.time() - start_time) * 1000  # ms
+            
             draw_confidence(d, classes, pred, W, H)
+            
+            # Dissertation-ready console logging
+            bi = np.argmax(pred)
+            if pred[bi] >= MIN_CONFIDENCE:
+                print(f"[LIVE EVAL] Prediction: {classes[bi]} | Confidence: {pred[bi]:.4f} | Latency: {latency:.2f}ms")
         else:
             cv2.putText(d, f"Buffering {len(buf)*100//seq_len}%", (20,50),
                         cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0,200,255), 2)
