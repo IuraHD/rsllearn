@@ -1,251 +1,230 @@
-# RSL Dataset Toolkit — Documentation
+# RSL Dataset Toolkit Documentation
 
-> **Romanian Sign Language** dataset recording, model training, and real-time inference pipeline.
-> Built with MediaPipe Tasks API (0.10.30+), TensorFlow/Keras LSTM, and OpenCV.
+This toolkit has three offline steps:
 
----
+1. Record a dataset from webcam video.
+2. Train the LSTM model on saved landmark sequences.
+3. Run live inference/testing from webcam input.
 
-## Table of Contents
+There is no separate offline batch inference script in this toolkit.
+For testing and inference, use `rsl_testare_live.py`.
 
-1. [Architecture Overview](#architecture-overview)
-2. [System Pipeline](#system-pipeline)
-3. [File Structure](#file-structure)
-4. [Module Descriptions](#module-descriptions)
-5. [Feature Vector Design](#feature-vector-design)
-6. [Data Flow](#data-flow)
-7. [State Machine — Data Collector](#state-machine--data-collector)
-8. [Model Architecture](#model-architecture)
-9. [Usage Guide](#usage-guide)
-10. [Configuration](#configuration)
+## Toolkit Scripts
 
----
+| Script | Purpose | Run when |
+|---|---|---|
+| `rsl_data_collector.py` | Record sign samples and save landmarks + video clips | You want to build or extend the dataset |
+| `rsl_model_trainer.py` | Train the LSTM model on recorded `.npy` landmark sequences | You already collected data |
+| `rsl_testare_live.py` | Run live inference/test from webcam using a trained `.h5` model | You want to test predictions in real time |
+| `utils.py` | Shared constants and helper functions | Imported by the scripts above |
 
-## Architecture Overview
+## Quick Start
 
-![Architecture Overview](01_architecture.jpg)
+Open PowerShell in the toolkit folder:
 
----
-
-## System Pipeline
-
-![System Pipeline](02_pipeline.jpg)
-
-**Three phases:**
-
-| Phase | Script | Input | Output |
-|-------|--------|-------|--------|
-| **1. Collect** | `rsl_data_collector.py` | Webcam + user words | `.npy` keypoints + `.mp4` clips |
-| **2. Train** | `rsl_model_trainer.py` | `.npy` keypoints | `.h5` LSTM model |
-| **3. Test** | `rsl_testare_live.py` | Webcam + `.h5` model | Real-time predictions |
-
----
-
-## File Structure
-
-```
-RSLdataset/
-├── utils.py                    # Shared module (constants, MediaPipe, extraction, drawing)
-├── rsl_data_collector.py       # Data collection script
-├── rsl_model_trainer.py        # Model training script
-├── rsl_testare_live.py         # Live inference script
-├── requirements.txt            # Python dependencies
-│
-├── docs/                       # Documentation and diagrams
-│   ├── DOCUMENTATION.md        # This file
-│   └── *.jpg                   # Rendered diagram images
-│
-├── mp_models/                  # Auto-downloaded MediaPipe models
-│   ├── pose_landmarker.task
-│   ├── hand_landmarker.task
-│   └── face_landmarker.task
-│
-├── dataset/                    # Collected data
-│   ├── landmarks/              # Recorded keypoint data
-│   │   ├── _metadata.txt       # features count, frames count
-│   │   ├── hello/
-│   │   │   ├── hello_1.npy     # shape: (90, 429)
-│   │   │   ├── hello_2.npy
-│   │   │   └── ...
-│   │   └── thanks/
-│   │       ├── thanks_1.npy
-│   │       └── ...
-│   │
-│   ├── clips/                  # Raw video backups
-│   │   ├── hello/
-│   │   │   ├── hello_1.mp4
-│   │   │   └── ...
-│   │   └── thanks/
-│   │       └── ...
-│
-├── saved_models/               # Trained models
-│   ├── best_model.h5           # Best checkpoint
-│   ├── rsl_YYYYMMDD_HHMM.h5   # Timestamped final
-│   ├── sign_classes.txt        # Class names
-│   └── model_meta.txt          # Feature/sequence info
-│
+```powershell
+cd C:\Users\IuraHD\Desktop\disertation\rsl\RSLdataset
 ```
 
----
+Create and activate a virtual environment if needed:
 
-## Module Descriptions
-
-### `utils.py` — Shared Module
-
-![Class Diagram](03_classes.jpg)
-
-All three scripts import from `utils.py` — **zero duplicated code**.
-
----
-
-## Feature Vector Design
-
-![Feature Vector Breakdown](04_features.jpg)
-
-### Comparison with Full Mesh
-
-| Approach | Face Points | Feature Vector | Reduction |
-|----------|------------|----------------|-----------|
-| Full MediaPipe Holistic (old) | 468 | **1662** | — |
-| **This project (key points)** | **68** | **429** | **74%** |
-
-### Key Face Landmarks (68 points)
-
-| Region | Count | Purpose |
-|--------|-------|---------|
-| Face outline | 17 | Face shape, head tilt |
-| Eyes | 12 | Eye gaze, blinks |
-| Eyebrows | 10 | Brow raise (questions, emphasis) |
-| Nose | 9 | Face orientation reference |
-| Lips | 20 | Mouth shape (mouthing, expressions) |
-
-> **Why keep face?** In sign language, facial expressions carry grammatical meaning — raised eyebrows = question, furrowed brows = negation, mouth shapes = adverbs.
-
----
-
-## Data Flow
-
-### Data Collection
-
-![Data Collection Sequence](05_collection_seq.jpg)
-
-### Model Training
-
-![Training Sequence](06_training_seq.jpg)
-
-### Live Inference
-
-![Live Test Sequence](07_live_seq.jpg)
-
----
-
-## State Machine — Data Collector
-
-![State Machine](08_state_machine.jpg)
-
-**Visual indicators during recording:**
-- 🟧 **Orange border** — Countdown, get ready
-- 🟩 **Green border + 🔴 REC** — Recording in progress
-- 🟦 **Blue border** — Sequence saved, brief pause
-
----
-
-## Model Architecture
-
-![Model Architecture](09_model_arch.jpg)
-
-### Training Callbacks
-
-| Callback | Monitor | Action |
-|----------|---------|--------|
-| `ModelCheckpoint` | `val_loss` | Save best weights to `best_model.h5` |
-| `EarlyStopping` | `val_loss` | Stop after 20 epochs without improvement |
-| `ReduceLROnPlateau` | `val_loss` | Halve learning rate after 10 stale epochs |
-
-### Data Augmentation (optional `--augment`)
-
-| Method | Description |
-|--------|-------------|
-| Gaussian noise | Add N(0, 0.01) noise to all keypoints |
-| Time-shift | Roll sequence by 1 frame forward |
-
----
-
-## Usage Guide
-
-### Prerequisites
-
-```bash
-cd <project-root>
+```powershell
 python -m venv .venv
-.\.venv\Scripts\activate       # Windows
-cd RSLdataset
+.\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 ```
 
-### Step 1 — Collect Data
+If the environment already exists, only activate it and install requirements if needed.
 
-```bash
+## How To Run
+
+### 1. Record the Dataset
+
+Run:
+
+```powershell
 python rsl_data_collector.py
-# Or with custom settings:
+```
+
+Optional custom settings:
+
+```powershell
 python rsl_data_collector.py --samples 40 --frames 90
 ```
 
-**Controls:** `q` = quit, `s` = skip sequence, `r` = redo sequence
+What happens:
 
-### Step 2 — Train Model
+- The script asks how many words/signs you want to record.
+- You type each word/sign label in the console.
+- The webcam opens.
+- For each word, the script records multiple sequences.
+- It saves landmarks as `.npy` files and raw backup clips as `.mp4` files.
 
-```bash
+Collector controls:
+
+- `q` = quit
+- `s` = skip current sequence
+- `r` = redo current sequence
+
+Recorded data is saved to:
+
+- `dataset\landmarks\<word>\*.npy`
+- `dataset\clips\<word>\*.mp4`
+- `dataset\landmarks\_metadata.txt`
+
+### 2. Train the Model
+
+Run:
+
+```powershell
 python rsl_model_trainer.py
-# With augmentation and more epochs:
+```
+
+Useful options:
+
+```powershell
+python rsl_model_trainer.py --epochs 300
+python rsl_model_trainer.py --augment
 python rsl_model_trainer.py --epochs 300 --augment --patience 30
 ```
 
-### Step 3 — Live Test
+What happens:
 
-```bash
+- The script loads the recorded landmark sequences from `dataset\landmarks`.
+- It splits data into train, validation, and held-out test sets.
+- It trains the LSTM model.
+- It evaluates the final model on the held-out test set.
+- It exports the trained model and evaluation files.
+
+Training outputs:
+
+- `saved_models\best_model.h5`
+- `saved_models\rsl_YYYYMMDD_HHMM.h5`
+- `saved_models\sign_classes.txt`
+- `saved_models\model_meta.txt`
+- `evaluation_outputs\metrics_summary.json`
+- `evaluation_outputs\classification_report.csv`
+- `evaluation_outputs\confusion_matrix.csv`
+- `evaluation_outputs\confusion_matrix.png`
+- `evaluation_outputs\training_history.png`
+- `evaluation_outputs\class_distribution.csv`
+- `evaluation_outputs\evaluation_predictions.csv`
+- `evaluation_outputs\evaluation_report.md`
+
+### 3. Run Live Inference / Testing
+
+Run:
+
+```powershell
 python rsl_testare_live.py
-# Or with specific model:
-python rsl_testare_live.py --model saved_models/rsl_20260215_0300.h5
 ```
 
----
+Run with a specific saved model:
 
-## Configuration
+```powershell
+python rsl_testare_live.py --model saved_models\best_model.h5
+python rsl_testare_live.py --model saved_models\rsl_20260215_0300.h5
+```
 
-All settings are centralized in `utils.py`:
+What happens:
 
-| Constant | Default | Description |
-|----------|---------|-------------|
-| `SAMPLES_PER_SIGN` | 30 | Sequences recorded per gesture |
-| `FRAMES_PER_SAMPLE` | 90 | Frames per sequence (~3s at 30fps) |
-| `DETECTION_THRESHOLD` | 0.5 | MediaPipe detection confidence |
-| `TRACKING_THRESHOLD` | 0.5 | MediaPipe tracking confidence |
-| `TOTAL_FEATURES` | 429 | Keypoint features per frame |
-| `NUM_FACE_KEY` | 68 | Key face landmarks tracked |
+- The script loads the trained model.
+- It reads class names from `saved_models\sign_classes.txt`.
+- It opens the webcam.
+- It builds a rolling frame buffer.
+- It runs real-time predictions and shows confidence bars on screen.
+- It prints live confidence and latency in the console when confidence passes the threshold.
 
-### Trainer-specific (`rsl_model_trainer.py`)
+This script is the toolkit's inference/test command.
 
-| Constant | Default | Description |
-|----------|---------|-------------|
-| `MAX_EPOCHS` | 200 | Maximum training epochs |
-| `BATCH_SIZE` | 32 | Training batch size |
-| `TEST_SPLIT` | 0.15 | Test data ratio |
-| `PATIENCE` | 20 | Early stopping patience |
-| `NOISE` | 0.01 | Augmentation noise level |
+## Typical Workflow
 
----
+```powershell
+python rsl_data_collector.py
+python rsl_model_trainer.py --epochs 300 --augment
+python rsl_testare_live.py --model saved_models\best_model.h5
+```
 
-## Technology Stack
+## GPU and CPU Execution
 
-| Component | Technology | Version |
-|-----------|-----------|---------|
-| Landmark Detection | MediaPipe Tasks API | 0.10.30+ |
-| Deep Learning | TensorFlow / Keras | 2.x |
-| Computer Vision | OpenCV | 4.x |
-| Data Processing | NumPy | 1.x |
-| Model Evaluation | scikit-learn | 1.x |
-| Language | Python | 3.13 |
+`rsl_model_trainer.py` and `rsl_testare_live.py` now do GPU-first startup detection.
 
----
+At startup they:
 
-*Iurie Virlan — RSL Dataset Toolkit — 2026*
+- print the TensorFlow version
+- print visible GPUs
+- prefer GPU automatically if one is available
+- try to enable TensorFlow GPU memory growth
+- fall back safely to CPU if no GPU is available or GPU initialization fails
+
+Typical GPU startup messages:
+
+```text
+[TensorFlow] Version: <tf-version>
+[TensorFlow] Visible GPUs: ['<gpu-name>']
+[TensorFlow] GPU detected. TensorFlow will use the default visible GPU.
+[TensorFlow] Memory growth enabled for visible GPU(s).
+[TensorFlow] Execution device: GPU
+```
+
+Typical CPU fallback messages:
+
+```text
+[TensorFlow] Version: <tf-version>
+[TensorFlow] Visible GPUs: []
+[TensorFlow] No GPU detected. Falling back to CPU execution.
+[TensorFlow] Execution device: CPU
+```
+
+## Important Paths
+
+| Path | Meaning |
+|---|---|
+| `dataset\landmarks` | Recorded landmark sequences used for training |
+| `dataset\clips` | Raw recorded videos |
+| `saved_models` | Best checkpoint and final saved models |
+| `evaluation_outputs` | Metrics, plots, reports, and confusion matrix exports |
+| `mp_models` | Downloaded MediaPipe task files |
+| `docs\DIAGRAMS.md` | Diagram reference document |
+
+## Troubleshooting
+
+### `No webcam.`
+
+A webcam was not detected or could not be opened by OpenCV.
+
+### `No landmarks folder. Run collector first.`
+
+You tried to train before recording data.
+Run:
+
+```powershell
+python rsl_data_collector.py
+```
+
+### `No classes found.` or `No data loaded.`
+
+The dataset folder exists, but there are no valid `.npy` training sequences inside it.
+
+### `Model not found:`
+
+You tried to run live testing before training, or you passed a wrong model path.
+Use one of:
+
+```powershell
+python rsl_model_trainer.py
+python rsl_testare_live.py --model saved_models\best_model.h5
+```
+
+### `No classes file.`
+
+The live tester could not find `saved_models\sign_classes.txt`.
+Train the model again so the trainer exports the class metadata.
+
+## Notes
+
+- The toolkit is offline and file-based.
+- The collector creates the dataset.
+- The trainer produces the model.
+- The live tester performs inference/testing.
+- Model architecture, dataset format, and training logic are unchanged by the GPU execution update.

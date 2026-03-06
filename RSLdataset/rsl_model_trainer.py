@@ -12,15 +12,16 @@ import argparse
 from datetime import datetime
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix, classification_report
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import LSTM, Dense, Dropout
-from tensorflow.keras.utils import to_categorical
-from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping, ReduceLROnPlateau
 import json
 import matplotlib.pyplot as plt
 import pandas as pd
 from sklearn.metrics import precision_recall_fscore_support
-from utils import LANDMARKS_FOLDER, SAVED_MODELS_FOLDER, FRAMES_PER_SAMPLE
+from utils import (
+    LANDMARKS_FOLDER,
+    SAVED_MODELS_FOLDER,
+    FRAMES_PER_SAMPLE,
+    configure_tensorflow_runtime,
+)
 
 # Training settings
 MAX_EPOCHS = 200
@@ -61,6 +62,8 @@ def _read_seq_length():
 
 def load_data(classes, seq_len):
     """Load .npy sequences for each class."""
+    from tensorflow.keras.utils import to_categorical
+
     X, y = [], []
     label_map = {c: i for i, c in enumerate(classes)}
     for cls in classes:
@@ -89,6 +92,15 @@ def augment(X, y):
 
 
 def train(epochs=MAX_EPOCHS, do_augment=False, patience=PATIENCE):
+    device_info = configure_tensorflow_runtime()
+    print(f"Training execution device: {device_info['device_used']}")
+    if not device_info["tensorflow_version"]:
+        print("TensorFlow is not available. Training cannot continue.")
+        return
+    from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping, ReduceLROnPlateau
+    from tensorflow.keras.layers import LSTM, Dense, Dropout
+    from tensorflow.keras.models import Sequential
+
     if not os.path.exists(LANDMARKS_FOLDER):
         print("No landmarks folder. Run collector first."); return
 
@@ -186,7 +198,11 @@ def train(epochs=MAX_EPOCHS, do_augment=False, patience=PATIENCE):
         "val_samples": len(X_val),
         "test_samples": len(X_te),
         "split_ratio": {"train": 0.7, "val": 0.15, "test": 0.15},
-        "random_seed": 42
+        "random_seed": 42,
+        "device_used": device_info["device_used"],
+        "tensorflow_version": device_info["tensorflow_version"],
+        "visible_gpus": device_info["visible_gpus"],
+        "memory_growth_enabled": device_info["memory_growth_enabled"],
     }
     with open(os.path.join(EVAL_FOLDER, "metrics_summary.json"), "w") as f:
         json.dump(metrics, f, indent=4)

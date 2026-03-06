@@ -11,11 +11,11 @@ import numpy as np
 import os
 import argparse
 import time
-from tensorflow.keras.models import load_model
 from utils import (
     SAVED_MODELS_FOLDER, FRAMES_PER_SAMPLE,
     create_landmarkers, close_landmarkers, detect_landmarks,
     extract_keypoints, draw_landmarks,
+    configure_tensorflow_runtime,
 )
 
 MIN_CONFIDENCE = 0.5
@@ -86,6 +86,13 @@ def draw_confidence(img, classes, probs, W, H):
 
 
 def run(model_path=None):
+    device_info = configure_tensorflow_runtime()
+    print(f"Live tester execution device: {device_info['device_used']}")
+    if not device_info["tensorflow_version"]:
+        print("TensorFlow is not available. Live inference cannot continue.")
+        return
+    from tensorflow.keras.models import load_model
+
     model_path = model_path or os.path.join(SAVED_MODELS_FOLDER, "best_model.h5")
     if not os.path.exists(model_path):
         print(f"Model not found: {model_path}"); return

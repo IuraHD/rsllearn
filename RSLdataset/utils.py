@@ -66,6 +66,79 @@ NUM_FACE_KEY = len(FACE_KEY_INDICES)
 # Pose(33×3) + Face(~68×3) + LH(21×3) + RH(21×3)
 TOTAL_FEATURES = 99 + NUM_FACE_KEY * 3 + 63 + 63
 
+
+def configure_tensorflow_runtime():
+    """Configure TensorFlow for GPU-first execution with safe CPU fallback."""
+    info = {
+        "tensorflow_version": None,
+        "visible_gpus": [],
+        "device_used": "CPU",
+        "memory_growth_enabled": False,
+    }
+
+    try:
+        import tensorflow as tf
+    except Exception as exc:
+        info["warning"] = f"TensorFlow import failed: {exc}"
+        print(f"[TensorFlow] Warning: {info['warning']}")
+        print("[TensorFlow] Execution device: CPU")
+        return info
+
+    info["tensorflow_version"] = tf.__version__
+    print(f"[TensorFlow] Version: {tf.__version__}")
+
+    try:
+        gpus = tf.config.list_physical_devices("GPU")
+        info["visible_gpus"] = [gpu.name for gpu in gpus]
+        print(f"[TensorFlow] Visible GPUs: {info['visible_gpus']}")
+    except Exception as exc:
+        info["warning"] = f"Could not query visible GPUs: {exc}"
+        print(f"[TensorFlow] Warning: {info['warning']}")
+        print("[TensorFlow] Falling back to CPU execution.")
+        print("[TensorFlow] Execution device: CPU")
+        return info
+
+    if not gpus:
+        print("[TensorFlow] No GPU detected. Falling back to CPU execution.")
+        print("[TensorFlow] Execution device: CPU")
+        return info
+
+    try:
+        memory_growth_enabled = True
+        for gpu in gpus:
+            try:
+                tf.config.experimental.set_memory_growth(gpu, True)
+            except Exception as exc:
+                memory_growth_enabled = False
+                print(f"[TensorFlow] Warning: Could not enable memory growth for {gpu.name}: {exc}")
+
+        info["memory_growth_enabled"] = memory_growth_enabled
+
+        logical_gpus = tf.config.list_logical_devices("GPU")
+        if not logical_gpus:
+            raise RuntimeError("No logical GPU devices became available.")
+
+        print("[TensorFlow] GPU detected. TensorFlow will use the default visible GPU.")
+        if memory_growth_enabled:
+            print("[TensorFlow] Memory growth enabled for visible GPU(s).")
+        else:
+            print("[TensorFlow] Memory growth could not be enabled; continuing with TensorFlow defaults.")
+        print("[TensorFlow] Execution device: GPU")
+        info["device_used"] = "GPU"
+        return info
+    except Exception as exc:
+        info["warning"] = f"GPU initialization failed: {exc}"
+        print(f"[TensorFlow] Warning: {info['warning']}")
+        try:
+            tf.config.set_visible_devices([], "GPU")
+        except Exception as disable_exc:
+            print(f"[TensorFlow] Warning: Could not disable GPUs after failure: {disable_exc}")
+        print("[TensorFlow] Falling back to CPU execution.")
+        print("[TensorFlow] Execution device: CPU")
+        info["device_used"] = "CPU"
+        info["memory_growth_enabled"] = False
+        return info
+
 # =============================================================================
 # DRAWING CONNECTIONS
 # =============================================================================
