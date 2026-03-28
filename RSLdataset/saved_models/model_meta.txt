@@ -1,0 +1,3 @@
+features=429
+sequence_length=60
+feature_standardization=true

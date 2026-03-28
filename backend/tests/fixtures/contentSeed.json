@@ -19,21 +19,12 @@
     },
     {
       "id": "u3",
-      "title": "Unit 3: Numerele 1-10",
+      "title": "Unit 3: Emoții și Stări",
       "orderIndex": 3,
-      "description": "Învață să numeri și să exprimi cantități.",
-      "isChallenge": false,
-      "availabilityType": "after_lesson",
-      "requiredLessonId": "l2-4"
-    },
-    {
-      "id": "u4",
-      "title": "Unit 4: Emoții și Stări",
-      "orderIndex": 4,
       "description": "Exprimă sentimente și stări emoționale.",
       "isChallenge": false,
       "availabilityType": "after_lesson",
-      "requiredLessonId": "l3-3"
+      "requiredLessonId": "l2-3"
     }
   ],
   "lessons": [
@@ -72,10 +63,10 @@
     {
       "id": "l2-2",
       "unitId": "u2",
-      "title": "Frații",
+      "title": "Frați și Prieteni",
       "orderIndex": 2,
-      "xpRewardBase": 20,
-      "description": "Frate și Soră"
+      "xpRewardBase": 25,
+      "description": "Frate, Soră și Prieten"
     },
     {
       "id": "l2-3",
@@ -86,60 +77,28 @@
       "description": "Bunic și Bunică"
     },
     {
-      "id": "l2-4",
-      "unitId": "u2",
-      "title": "Recapitulare Familie",
-      "orderIndex": 4,
-      "xpRewardBase": 50,
-      "description": "Toți membrii familiei + Saluturi"
-    },
-    {
       "id": "l3-1",
       "unitId": "u3",
-      "title": "Numerele 1-3",
-      "orderIndex": 1,
-      "xpRewardBase": 20,
-      "description": "Unu, Doi, Trei"
-    },
-    {
-      "id": "l3-2",
-      "unitId": "u3",
-      "title": "Numerele 4-6",
-      "orderIndex": 2,
-      "xpRewardBase": 20,
-      "description": "Patru, Cinci, Șase"
-    },
-    {
-      "id": "l3-3",
-      "unitId": "u3",
-      "title": "Numerele 7-10",
-      "orderIndex": 3,
-      "xpRewardBase": 30,
-      "description": "Șapte, Opt, Nouă, Zece"
-    },
-    {
-      "id": "l4-1",
-      "unitId": "u4",
       "title": "Stări Pozitive",
       "orderIndex": 1,
       "xpRewardBase": 20,
       "description": "Fericit, Iubire, Plăcere"
     },
     {
-      "id": "l4-2",
-      "unitId": "u4",
+      "id": "l3-2",
+      "unitId": "u3",
       "title": "Stări Negative",
       "orderIndex": 2,
       "xpRewardBase": 20,
       "description": "Trist, Supărat, Speriat"
     },
     {
-      "id": "l4-3",
-      "unitId": "u4",
-      "title": "Marea Recapitulare",
+      "id": "l3-3",
+      "unitId": "u3",
+      "title": "Recapitulare Finală",
       "orderIndex": 3,
       "xpRewardBase": 100,
-      "description": "Test final din toate lecțiile"
+      "description": "Test final din toate cele 3 unități"
     }
   ],
   "tasks": [
@@ -508,8 +467,19 @@
     {
       "id": "t2-2-3",
       "lessonId": "l2-2",
-      "type": "SIGN_TO_TEXT",
+      "type": "REPEAT_SIGN",
       "orderIndex": 3,
+      "promptText": "Învață semnul: Prieten",
+      "difficulty": "easy",
+      "signVideoUrl": "/videos/prieten.mp4",
+      "expectedLabel": "Prieten",
+      "minConfidence": 0.7
+    },
+    {
+      "id": "t2-2-4",
+      "lessonId": "l2-2",
+      "type": "SIGN_TO_TEXT",
+      "orderIndex": 4,
       "promptText": "Ce înseamnă acest semn?",
       "difficulty": "easy",
       "signVideoUrl": "/videos/sora.mp4",
@@ -517,28 +487,28 @@
         { "id": "o1", "labelText": "Frate", "isCorrect": false },
         { "id": "o2", "labelText": "Soră", "isCorrect": true },
         { "id": "o3", "labelText": "Mama", "isCorrect": false },
-        { "id": "o4", "labelText": "Tata", "isCorrect": false }
-      ]
-    },
-    {
-      "id": "t2-2-4",
-      "lessonId": "l2-2",
-      "type": "VIDEO_MULTIPLE_CHOICE",
-      "orderIndex": 4,
-      "promptText": "Care video înseamnă 'Frate'?",
-      "difficulty": "medium",
-      "options": [
-        { "id": "o1", "videoUrl": "/videos/frate.mp4", "isCorrect": true },
-        { "id": "o2", "videoUrl": "/videos/sora.mp4", "isCorrect": false },
-        { "id": "o3", "videoUrl": "/videos/bunic.mp4", "isCorrect": false },
-        { "id": "o4", "videoUrl": "/videos/tata.mp4", "isCorrect": false }
+        { "id": "o4", "labelText": "Prieten", "isCorrect": false }
       ]
     },
     {
       "id": "t2-2-5",
       "lessonId": "l2-2",
-      "type": "SIGN_TO_TEXT",
+      "type": "VIDEO_MULTIPLE_CHOICE",
       "orderIndex": 5,
+      "promptText": "Care video înseamnă 'Prieten'?",
+      "difficulty": "medium",
+      "options": [
+        { "id": "o1", "videoUrl": "/videos/frate.mp4", "isCorrect": false },
+        { "id": "o2", "videoUrl": "/videos/prieten.mp4", "isCorrect": true },
+        { "id": "o3", "videoUrl": "/videos/sora.mp4", "isCorrect": false },
+        { "id": "o4", "videoUrl": "/videos/tata.mp4", "isCorrect": false }
+      ]
+    },
+    {
+      "id": "t2-2-6",
+      "lessonId": "l2-2",
+      "type": "SIGN_TO_TEXT",
+      "orderIndex": 6,
       "promptText": "Recapitulare: Ce înseamnă asta?",
       "difficulty": "easy",
       "signVideoUrl": "/videos/mama.mp4",
@@ -550,23 +520,23 @@
       ]
     },
     {
-      "id": "t2-2-6",
+      "id": "t2-2-7",
       "lessonId": "l2-2",
       "type": "TEXT_TO_SIGN",
-      "orderIndex": 6,
+      "orderIndex": 7,
       "promptText": "Arată-ne semnul pentru 'Frate'",
       "difficulty": "medium",
       "expectedLabel": "Frate",
       "minConfidence": 0.75
     },
     {
-      "id": "t2-2-7",
+      "id": "t2-2-8",
       "lessonId": "l2-2",
       "type": "TEXT_TO_SIGN",
-      "orderIndex": 7,
-      "promptText": "Arată-ne semnul pentru 'Soră'",
+      "orderIndex": 8,
+      "promptText": "Arată-ne semnul pentru 'Prieten'",
       "difficulty": "medium",
-      "expectedLabel": "Soră",
+      "expectedLabel": "Prieten",
       "minConfidence": 0.75
     },
     {
@@ -617,7 +587,7 @@
         { "id": "o1", "labelText": "Bunic", "isCorrect": true },
         { "id": "o2", "labelText": "Bunică", "isCorrect": false },
         { "id": "o3", "labelText": "Tata", "isCorrect": false },
-        { "id": "o4", "labelText": "Unchi", "isCorrect": false }
+        { "id": "o4", "labelText": "Prieten", "isCorrect": false }
       ]
     },
     {
@@ -641,350 +611,8 @@
       "minConfidence": 0.75
     },
     {
-      "id": "t2-4-1",
-      "lessonId": "l2-4",
-      "type": "SIGN_TO_TEXT",
-      "orderIndex": 1,
-      "promptText": "Recapitulare: Cine este?",
-      "difficulty": "medium",
-      "signVideoUrl": "/videos/tata.mp4",
-      "options": [
-        { "id": "o1", "labelText": "Tata", "isCorrect": true },
-        { "id": "o2", "labelText": "Bunic", "isCorrect": false },
-        { "id": "o3", "labelText": "Frate", "isCorrect": false },
-        { "id": "o4", "labelText": "Unchi", "isCorrect": false }
-      ]
-    },
-    {
-      "id": "t2-4-2",
-      "lessonId": "l2-4",
-      "type": "SIGN_TO_TEXT",
-      "orderIndex": 2,
-      "promptText": "Recapitulare: Cine este?",
-      "difficulty": "medium",
-      "signVideoUrl": "/videos/sora.mp4",
-      "options": [
-        { "id": "o1", "labelText": "Soră", "isCorrect": true },
-        { "id": "o2", "labelText": "Mama", "isCorrect": false },
-        { "id": "o3", "labelText": "Bunică", "isCorrect": false },
-        { "id": "o4", "labelText": "Mătușă", "isCorrect": false }
-      ]
-    },
-    {
-      "id": "t2-4-3",
-      "lessonId": "l2-4",
-      "type": "SIGN_TO_TEXT",
-      "orderIndex": 3,
-      "promptText": "Recapitulare Unit 1: Ce înseamnă?",
-      "difficulty": "easy",
-      "signVideoUrl": "/videos/scuze.mp4",
-      "options": [
-        { "id": "o1", "labelText": "Scuze", "isCorrect": true },
-        { "id": "o2", "labelText": "Mulțumesc", "isCorrect": false },
-        { "id": "o3", "labelText": "Te rog", "isCorrect": false },
-        { "id": "o4", "labelText": "Nu", "isCorrect": false }
-      ]
-    },
-    {
-      "id": "t2-4-4",
-      "lessonId": "l2-4",
-      "type": "TEXT_TO_SIGN",
-      "orderIndex": 4,
-      "promptText": "Arată-ne semnul pentru 'Mama'",
-      "difficulty": "medium",
-      "expectedLabel": "Mama",
-      "minConfidence": 0.75
-    },
-    {
       "id": "t3-1-1",
       "lessonId": "l3-1",
-      "type": "REPEAT_SIGN",
-      "orderIndex": 1,
-      "promptText": "Învață semnul: Unu",
-      "difficulty": "easy",
-      "signVideoUrl": "/videos/unu.mp4",
-      "expectedLabel": "Unu",
-      "minConfidence": 0.7
-    },
-    {
-      "id": "t3-1-2",
-      "lessonId": "l3-1",
-      "type": "REPEAT_SIGN",
-      "orderIndex": 2,
-      "promptText": "Învață semnul: Doi",
-      "difficulty": "easy",
-      "signVideoUrl": "/videos/doi.mp4",
-      "expectedLabel": "Doi",
-      "minConfidence": 0.7
-    },
-    {
-      "id": "t3-1-3",
-      "lessonId": "l3-1",
-      "type": "REPEAT_SIGN",
-      "orderIndex": 3,
-      "promptText": "Învață semnul: Trei",
-      "difficulty": "easy",
-      "signVideoUrl": "/videos/trei.mp4",
-      "expectedLabel": "Trei",
-      "minConfidence": 0.7
-    },
-    {
-      "id": "t3-1-4",
-      "lessonId": "l3-1",
-      "type": "SIGN_TO_TEXT",
-      "orderIndex": 4,
-      "promptText": "Ce număr este acesta?",
-      "difficulty": "easy",
-      "signVideoUrl": "/videos/unu.mp4",
-      "options": [
-        { "id": "o1", "labelText": "Unu", "isCorrect": true },
-        { "id": "o2", "labelText": "Doi", "isCorrect": false },
-        { "id": "o3", "labelText": "Trei", "isCorrect": false },
-        { "id": "o4", "labelText": "Patru", "isCorrect": false }
-      ]
-    },
-    {
-      "id": "t3-1-5",
-      "lessonId": "l3-1",
-      "type": "VIDEO_MULTIPLE_CHOICE",
-      "orderIndex": 5,
-      "promptText": "Care video înseamnă 'Doi'?",
-      "difficulty": "medium",
-      "options": [
-        { "id": "o1", "videoUrl": "/videos/doi.mp4", "isCorrect": true },
-        { "id": "o2", "videoUrl": "/videos/unu.mp4", "isCorrect": false },
-        { "id": "o3", "videoUrl": "/videos/trei.mp4", "isCorrect": false },
-        { "id": "o4", "videoUrl": "/videos/patru.mp4", "isCorrect": false }
-      ]
-    },
-    {
-      "id": "t3-1-6",
-      "lessonId": "l3-1",
-      "type": "SIGN_TO_TEXT",
-      "orderIndex": 6,
-      "promptText": "Recapitulare: Câți frați?",
-      "difficulty": "medium",
-      "signVideoUrl": "/videos/frate.mp4",
-      "options": [
-        { "id": "o1", "labelText": "Frate", "isCorrect": true },
-        { "id": "o2", "labelText": "Soră", "isCorrect": false },
-        { "id": "o3", "labelText": "Trei", "isCorrect": false },
-        { "id": "o4", "labelText": "Unu", "isCorrect": false }
-      ]
-    },
-    {
-      "id": "t3-1-7",
-      "lessonId": "l3-1",
-      "type": "TEXT_TO_SIGN",
-      "orderIndex": 7,
-      "promptText": "Arată-ne semnul pentru 'Doi'",
-      "difficulty": "medium",
-      "expectedLabel": "Doi",
-      "minConfidence": 0.75
-    },
-    {
-      "id": "t3-1-8",
-      "lessonId": "l3-1",
-      "type": "TEXT_TO_SIGN",
-      "orderIndex": 8,
-      "promptText": "Arată-ne semnul pentru 'Trei'",
-      "difficulty": "medium",
-      "expectedLabel": "Trei",
-      "minConfidence": 0.75
-    },
-    {
-      "id": "t3-2-1",
-      "lessonId": "l3-2",
-      "type": "REPEAT_SIGN",
-      "orderIndex": 1,
-      "promptText": "Învață semnul: Patru",
-      "difficulty": "easy",
-      "signVideoUrl": "/videos/patru.mp4",
-      "expectedLabel": "Patru",
-      "minConfidence": 0.7
-    },
-    {
-      "id": "t3-2-2",
-      "lessonId": "l3-2",
-      "type": "REPEAT_SIGN",
-      "orderIndex": 2,
-      "promptText": "Învață semnul: Cinci",
-      "difficulty": "easy",
-      "signVideoUrl": "/videos/cinci.mp4",
-      "expectedLabel": "Cinci",
-      "minConfidence": 0.7
-    },
-    {
-      "id": "t3-2-3",
-      "lessonId": "l3-2",
-      "type": "REPEAT_SIGN",
-      "orderIndex": 3,
-      "promptText": "Învață semnul: Șase",
-      "difficulty": "easy",
-      "signVideoUrl": "/videos/sase.mp4",
-      "expectedLabel": "Șase",
-      "minConfidence": 0.7
-    },
-    {
-      "id": "t3-2-4",
-      "lessonId": "l3-2",
-      "type": "VIDEO_MULTIPLE_CHOICE",
-      "orderIndex": 4,
-      "promptText": "Care video înseamnă 'Cinci'?",
-      "difficulty": "medium",
-      "options": [
-        { "id": "o1", "videoUrl": "/videos/patru.mp4", "isCorrect": false },
-        { "id": "o2", "videoUrl": "/videos/cinci.mp4", "isCorrect": true },
-        { "id": "o3", "videoUrl": "/videos/sase.mp4", "isCorrect": false },
-        { "id": "o4", "videoUrl": "/videos/unu.mp4", "isCorrect": false }
-      ]
-    },
-    {
-      "id": "t3-2-5",
-      "lessonId": "l3-2",
-      "type": "SIGN_TO_TEXT",
-      "orderIndex": 5,
-      "promptText": "Ce număr este acesta?",
-      "difficulty": "medium",
-      "signVideoUrl": "/videos/patru.mp4",
-      "options": [
-        { "id": "o1", "labelText": "Patru", "isCorrect": true },
-        { "id": "o2", "labelText": "Cinci", "isCorrect": false },
-        { "id": "o3", "labelText": "Șase", "isCorrect": false },
-        { "id": "o4", "labelText": "Trei", "isCorrect": false }
-      ]
-    },
-    {
-      "id": "t3-2-6",
-      "lessonId": "l3-2",
-      "type": "TEXT_TO_SIGN",
-      "orderIndex": 6,
-      "promptText": "Arată-ne semnul pentru 'Șase'",
-      "difficulty": "medium",
-      "expectedLabel": "Șase",
-      "minConfidence": 0.75
-    },
-    {
-      "id": "t3-2-7",
-      "lessonId": "l3-2",
-      "type": "TEXT_TO_SIGN",
-      "orderIndex": 7,
-      "promptText": "Arată-ne semnul pentru 'Cinci'",
-      "difficulty": "medium",
-      "expectedLabel": "Cinci",
-      "minConfidence": 0.75
-    },
-    {
-      "id": "t3-3-1",
-      "lessonId": "l3-3",
-      "type": "REPEAT_SIGN",
-      "orderIndex": 1,
-      "promptText": "Învață semnul: Șapte",
-      "difficulty": "easy",
-      "signVideoUrl": "/videos/sapte.mp4",
-      "expectedLabel": "Șapte",
-      "minConfidence": 0.7
-    },
-    {
-      "id": "t3-3-2",
-      "lessonId": "l3-3",
-      "type": "REPEAT_SIGN",
-      "orderIndex": 2,
-      "promptText": "Învață semnul: Opt",
-      "difficulty": "easy",
-      "signVideoUrl": "/videos/opt.mp4",
-      "expectedLabel": "Opt",
-      "minConfidence": 0.7
-    },
-    {
-      "id": "t3-3-3",
-      "lessonId": "l3-3",
-      "type": "REPEAT_SIGN",
-      "orderIndex": 3,
-      "promptText": "Învață semnul: Nouă",
-      "difficulty": "easy",
-      "signVideoUrl": "/videos/noua.mp4",
-      "expectedLabel": "Nouă",
-      "minConfidence": 0.7
-    },
-    {
-      "id": "t3-3-4",
-      "lessonId": "l3-3",
-      "type": "REPEAT_SIGN",
-      "orderIndex": 4,
-      "promptText": "Învață semnul: Zece",
-      "difficulty": "easy",
-      "signVideoUrl": "/videos/zece.mp4",
-      "expectedLabel": "Zece",
-      "minConfidence": 0.7
-    },
-    {
-      "id": "t3-3-5",
-      "lessonId": "l3-3",
-      "type": "VIDEO_MULTIPLE_CHOICE",
-      "orderIndex": 5,
-      "promptText": "Care video înseamnă 'Șapte'?",
-      "difficulty": "medium",
-      "options": [
-        { "id": "o1", "videoUrl": "/videos/sapte.mp4", "isCorrect": true },
-        { "id": "o2", "videoUrl": "/videos/opt.mp4", "isCorrect": false },
-        { "id": "o3", "videoUrl": "/videos/noua.mp4", "isCorrect": false },
-        { "id": "o4", "videoUrl": "/videos/zece.mp4", "isCorrect": false }
-      ]
-    },
-    {
-      "id": "t3-3-6",
-      "lessonId": "l3-3",
-      "type": "SIGN_TO_TEXT",
-      "orderIndex": 6,
-      "promptText": "Ce număr este acesta?",
-      "difficulty": "medium",
-      "signVideoUrl": "/videos/opt.mp4",
-      "options": [
-        { "id": "o1", "labelText": "Opt", "isCorrect": true },
-        { "id": "o2", "labelText": "Nouă", "isCorrect": false },
-        { "id": "o3", "labelText": "Zece", "isCorrect": false },
-        { "id": "o4", "labelText": "Șapte", "isCorrect": false }
-      ]
-    },
-    {
-      "id": "t3-3-7",
-      "lessonId": "l3-3",
-      "type": "SIGN_TO_TEXT",
-      "orderIndex": 7,
-      "promptText": "Recapitulare: Ce număr e acesta?",
-      "difficulty": "medium",
-      "signVideoUrl": "/videos/trei.mp4",
-      "options": [
-        { "id": "o1", "labelText": "Trei", "isCorrect": true },
-        { "id": "o2", "labelText": "Opt", "isCorrect": false },
-        { "id": "o3", "labelText": "Zece", "isCorrect": false },
-        { "id": "o4", "labelText": "Unu", "isCorrect": false }
-      ]
-    },
-    {
-      "id": "t3-3-8",
-      "lessonId": "l3-3",
-      "type": "TEXT_TO_SIGN",
-      "orderIndex": 8,
-      "promptText": "Arată-ne semnul pentru 'Zece'",
-      "difficulty": "medium",
-      "expectedLabel": "Zece",
-      "minConfidence": 0.75
-    },
-    {
-      "id": "t3-3-9",
-      "lessonId": "l3-3",
-      "type": "TEXT_TO_SIGN",
-      "orderIndex": 9,
-      "promptText": "Arată-ne semnul pentru 'Nouă'",
-      "difficulty": "medium",
-      "expectedLabel": "Nouă",
-      "minConfidence": 0.75
-    },
-    {
-      "id": "t4-1-1",
-      "lessonId": "l4-1",
       "type": "REPEAT_SIGN",
       "orderIndex": 1,
       "promptText": "Învață semnul: Fericit",
@@ -994,8 +622,8 @@
       "minConfidence": 0.7
     },
     {
-      "id": "t4-1-2",
-      "lessonId": "l4-1",
+      "id": "t3-1-2",
+      "lessonId": "l3-1",
       "type": "REPEAT_SIGN",
       "orderIndex": 2,
       "promptText": "Învață semnul: Iubire",
@@ -1005,8 +633,8 @@
       "minConfidence": 0.7
     },
     {
-      "id": "t4-1-3",
-      "lessonId": "l4-1",
+      "id": "t3-1-3",
+      "lessonId": "l3-1",
       "type": "REPEAT_SIGN",
       "orderIndex": 3,
       "promptText": "Învață semnul: Plăcere",
@@ -1016,8 +644,8 @@
       "minConfidence": 0.7
     },
     {
-      "id": "t4-1-4",
-      "lessonId": "l4-1",
+      "id": "t3-1-4",
+      "lessonId": "l3-1",
       "type": "SIGN_TO_TEXT",
       "orderIndex": 4,
       "promptText": "Ce sentiment este acesta?",
@@ -1031,8 +659,8 @@
       ]
     },
     {
-      "id": "t4-1-5",
-      "lessonId": "l4-1",
+      "id": "t3-1-5",
+      "lessonId": "l3-1",
       "type": "VIDEO_MULTIPLE_CHOICE",
       "orderIndex": 5,
       "promptText": "Care video înseamnă 'Plăcere'?",
@@ -1045,23 +673,23 @@
       ]
     },
     {
-      "id": "t4-1-6",
-      "lessonId": "l4-1",
+      "id": "t3-1-6",
+      "lessonId": "l3-1",
       "type": "SIGN_TO_TEXT",
       "orderIndex": 6,
-      "promptText": "Recapitulare: Ce număr e acesta?",
+      "promptText": "Recapitulare: Ce înseamnă acest semn?",
       "difficulty": "medium",
-      "signVideoUrl": "/videos/zece.mp4",
+      "signVideoUrl": "/videos/buna.mp4",
       "options": [
-        { "id": "o1", "labelText": "Zece", "isCorrect": true },
-        { "id": "o2", "labelText": "Cinci", "isCorrect": false },
-        { "id": "o3", "labelText": "Unu", "isCorrect": false },
-        { "id": "o4", "labelText": "Doi", "isCorrect": false }
+        { "id": "o1", "labelText": "Bună", "isCorrect": true },
+        { "id": "o2", "labelText": "La revedere", "isCorrect": false },
+        { "id": "o3", "labelText": "Fericit", "isCorrect": false },
+        { "id": "o4", "labelText": "Iubire", "isCorrect": false }
       ]
     },
     {
-      "id": "t4-1-7",
-      "lessonId": "l4-1",
+      "id": "t3-1-7",
+      "lessonId": "l3-1",
       "type": "TEXT_TO_SIGN",
       "orderIndex": 7,
       "promptText": "Arată-ne semnul pentru 'Fericit'",
@@ -1070,8 +698,8 @@
       "minConfidence": 0.75
     },
     {
-      "id": "t4-1-8",
-      "lessonId": "l4-1",
+      "id": "t3-1-8",
+      "lessonId": "l3-1",
       "type": "TEXT_TO_SIGN",
       "orderIndex": 8,
       "promptText": "Arată-ne semnul pentru 'Iubire'",
@@ -1080,8 +708,8 @@
       "minConfidence": 0.75
     },
     {
-      "id": "t4-2-1",
-      "lessonId": "l4-2",
+      "id": "t3-2-1",
+      "lessonId": "l3-2",
       "type": "REPEAT_SIGN",
       "orderIndex": 1,
       "promptText": "Învață semnul: Trist",
@@ -1091,8 +719,8 @@
       "minConfidence": 0.7
     },
     {
-      "id": "t4-2-2",
-      "lessonId": "l4-2",
+      "id": "t3-2-2",
+      "lessonId": "l3-2",
       "type": "REPEAT_SIGN",
       "orderIndex": 2,
       "promptText": "Învață semnul: Supărat",
@@ -1102,8 +730,8 @@
       "minConfidence": 0.7
     },
     {
-      "id": "t4-2-3",
-      "lessonId": "l4-2",
+      "id": "t3-2-3",
+      "lessonId": "l3-2",
       "type": "REPEAT_SIGN",
       "orderIndex": 3,
       "promptText": "Învață semnul: Speriat",
@@ -1113,8 +741,8 @@
       "minConfidence": 0.7
     },
     {
-      "id": "t4-2-4",
-      "lessonId": "l4-2",
+      "id": "t3-2-4",
+      "lessonId": "l3-2",
       "type": "VIDEO_MULTIPLE_CHOICE",
       "orderIndex": 4,
       "promptText": "Care video înseamnă 'Trist'?",
@@ -1127,8 +755,8 @@
       ]
     },
     {
-      "id": "t4-2-5",
-      "lessonId": "l4-2",
+      "id": "t3-2-5",
+      "lessonId": "l3-2",
       "type": "SIGN_TO_TEXT",
       "orderIndex": 5,
       "promptText": "Ce sentiment este acesta?",
@@ -1142,8 +770,8 @@
       ]
     },
     {
-      "id": "t4-2-6",
-      "lessonId": "l4-2",
+      "id": "t3-2-6",
+      "lessonId": "l3-2",
       "type": "TEXT_TO_SIGN",
       "orderIndex": 6,
       "promptText": "Arată-ne semnul pentru 'Supărat'",
@@ -1152,8 +780,8 @@
       "minConfidence": 0.75
     },
     {
-      "id": "t4-2-7",
-      "lessonId": "l4-2",
+      "id": "t3-2-7",
+      "lessonId": "l3-2",
       "type": "TEXT_TO_SIGN",
       "orderIndex": 7,
       "promptText": "Arată-ne semnul pentru 'Trist'",
@@ -1162,8 +790,8 @@
       "minConfidence": 0.75
     },
     {
-      "id": "t4-3-1",
-      "lessonId": "l4-3",
+      "id": "t3-3-1",
+      "lessonId": "l3-3",
       "type": "SIGN_TO_TEXT",
       "orderIndex": 1,
       "promptText": "Recapitulare Finală: Ce este?",
@@ -1177,48 +805,48 @@
       ]
     },
     {
-      "id": "t4-3-2",
-      "lessonId": "l4-3",
+      "id": "t3-3-2",
+      "lessonId": "l3-3",
       "type": "SIGN_TO_TEXT",
       "orderIndex": 2,
       "promptText": "Recapitulare Finală: Ce este?",
       "difficulty": "hard",
-      "signVideoUrl": "/videos/cinci.mp4",
+      "signVideoUrl": "/videos/scuze.mp4",
       "options": [
-        { "id": "o1", "labelText": "Cinci", "isCorrect": true },
-        { "id": "o2", "labelText": "Zece", "isCorrect": false },
-        { "id": "o3", "labelText": "Doi", "isCorrect": false },
-        { "id": "o4", "labelText": "Șapte", "isCorrect": false }
+        { "id": "o1", "labelText": "Scuze", "isCorrect": true },
+        { "id": "o2", "labelText": "Mulțumesc", "isCorrect": false },
+        { "id": "o3", "labelText": "Te rog", "isCorrect": false },
+        { "id": "o4", "labelText": "Nu", "isCorrect": false }
       ]
     },
     {
-      "id": "t4-3-3",
-      "lessonId": "l4-3",
+      "id": "t3-3-3",
+      "lessonId": "l3-3",
       "type": "SIGN_TO_TEXT",
       "orderIndex": 3,
       "promptText": "Recapitulare Finală: Ce este?",
       "difficulty": "hard",
-      "signVideoUrl": "/videos/multumesc.mp4",
+      "signVideoUrl": "/videos/iubire.mp4",
       "options": [
-        { "id": "o1", "labelText": "Mulțumesc", "isCorrect": true },
-        { "id": "o2", "labelText": "Bună", "isCorrect": false },
-        { "id": "o3", "labelText": "Scuze", "isCorrect": false },
-        { "id": "o4", "labelText": "Te rog", "isCorrect": false }
+        { "id": "o1", "labelText": "Iubire", "isCorrect": true },
+        { "id": "o2", "labelText": "Fericit", "isCorrect": false },
+        { "id": "o3", "labelText": "Trist", "isCorrect": false },
+        { "id": "o4", "labelText": "Speriat", "isCorrect": false }
       ]
     },
     {
-      "id": "t4-3-4",
-      "lessonId": "l4-3",
+      "id": "t3-3-4",
+      "lessonId": "l3-3",
       "type": "TEXT_TO_SIGN",
       "orderIndex": 4,
-      "promptText": "Arată-ne semnul pentru 'Iubire'",
+      "promptText": "Arată-ne semnul pentru 'Prieten'",
       "difficulty": "hard",
-      "expectedLabel": "Iubire",
+      "expectedLabel": "Prieten",
       "minConfidence": 0.8
     },
     {
-      "id": "t4-3-5",
-      "lessonId": "l4-3",
+      "id": "t3-3-5",
+      "lessonId": "l3-3",
       "type": "TEXT_TO_SIGN",
       "orderIndex": 5,
       "promptText": "Arată-ne semnul pentru 'La revedere'",

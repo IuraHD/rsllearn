@@ -128,14 +128,6 @@ def seed_database():
                 "condition_type": "unit_completed",
                 "condition_value": "u3"
             },
-            {
-                "id": "ach_unit_4",
-                "title": "Absolvent Unit 4",
-                "description": "Ai completat toate lecțiile din Unit 4.",
-                "icon": "badge-perfect",
-                "condition_type": "unit_completed",
-                "condition_value": "u4"
-            },
             # Difficulty-based achievements removed (difficulty system no longer used).
         ]
         

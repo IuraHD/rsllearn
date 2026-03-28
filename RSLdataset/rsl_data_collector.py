@@ -4,7 +4,7 @@ Workflow: enter word count → type words → record each one.
 
 Usage:
     python rsl_data_collector.py
-    python rsl_data_collector.py --samples 30 --frames 90
+    python rsl_data_collector.py --samples 60 --frames 60
 """
 
 import cv2
@@ -17,6 +17,7 @@ from utils import (
     TOTAL_FEATURES, NUM_FACE_KEY,
     create_landmarkers, close_landmarkers, detect_landmarks,
     extract_keypoints, draw_landmarks,
+    count_detected_hands, find_idle_label, MIN_SIGN_HAND_VISIBILITY_RATIO,
 )
 
 
@@ -46,13 +47,60 @@ def ask_words():
         except ValueError: pass
         print("  Enter a positive number.")
 
+    print("\n  Enter the words as a single comma-separated list.")
+    print("  Example: Salut, La revedere, Multumesc, idle")
+
     words = []
-    for i in range(n):
-        while True:
-            w = input(f"  Word {i+1}/{n}: ").strip()
-            if w: words.append(w); break
+    while True:
+        raw = input(f"\n  Paste {n} words separated by commas: ").strip()
+        if not raw:
+            print("  Enter at least one word.")
+            continue
+
+        parsed = [w.strip() for w in raw.split(",") if w.strip()]
+        if len(parsed) != n:
+            print(f"  Expected {n} words, but got {len(parsed)}. Please try again.")
+            continue
+
+        words = parsed
+        break
+
     print(f"\n  Words: {words}\n")
+    if not find_idle_label(words):
+        print("  Recommendation: add an 'idle' label so live testing can learn no-sign/background frames.\n")
     return words
+
+
+def wait_for_word_start(cam, word, word_index, total_words, total_samples):
+    """Show a live preview and wait for Enter before starting a new word."""
+    while True:
+        ok, frame = cam.read()
+        if not ok:
+            return "quit"
+
+        h, w = frame.shape[:2]
+        d = frame.copy()
+        cv2.rectangle(d, (0, 0), (w - 1, h - 1), (255, 200, 0), 6)
+        cv2.rectangle(d, (35, 35), (w - 35, 175), (30, 30, 30), -1)
+
+        cv2.putText(d, f"Word {word_index}/{total_words}", (55, 75),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255, 255, 255), 2)
+        cv2.putText(d, f"\"{word}\"", (55, 115),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1.1, (0, 255, 255), 3)
+        cv2.putText(d, f"Prepare for {total_samples} recordings", (55, 150),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (200, 255, 200), 2)
+
+        cv2.putText(d, "Press Enter to start this word", (55, h - 70),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 200, 0), 2)
+        cv2.putText(d, "Press q to quit", (55, h - 35),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.65, (200, 200, 255), 2)
+
+        cv2.imshow("RSL Data Collector", d)
+        k = cv2.waitKey(1) & 0xFF
+        if k in (13, 10):
+            return "start"
+        if k == ord("q"):
+            return "quit"
 
 
 def collect(word_list, num_samples=None, num_frames=None):
@@ -75,8 +123,16 @@ def collect(word_list, num_samples=None, num_frames=None):
     fps = int(cam.get(cv2.CAP_PROP_FPS) or 30)
     if fps > 120: fps = 30
 
+    idle_label = find_idle_label(word_list)
+
     print(f"  {len(word_list)} words | {num_samples} samples | {num_frames} frames (~{num_frames/fps:.1f}s)")
-    print("  Controls: q=quit  s=skip  r=redo\n")
+    print("  Recording guidance:")
+    print("    - Keep the upper body and both hands inside the frame.")
+    print("    - Start the sign quickly and keep it centered in the 2-second window.")
+    print("    - Use stable lighting and a plain background when possible.")
+    if not idle_label:
+        print("    - Add an 'idle' label in the next recording pass to reduce live false positives.")
+    print("  Controls: Enter=start word  q=quit  s=skip sample  r=redo sample\n")
 
     stop = False
     for wi, word in enumerate(word_list):
@@ -88,6 +144,11 @@ def collect(word_list, num_samples=None, num_frames=None):
         seq = find_next_seq(lm_dir, word)
 
         print(f"[{wi+1}/{len(word_list)}] \"{word}\" — {num_samples} sequences from #{seq}")
+
+        start_action = wait_for_word_start(cam, word, wi + 1, len(word_list), num_samples)
+        if start_action == "quit":
+            stop = True
+            break
 
         # Countdown — live camera, orange border
         for c in range(3, 0, -1):
@@ -107,6 +168,7 @@ def collect(word_list, num_samples=None, num_frames=None):
             vid_path = os.path.join(vid_dir, f"{word}_{seq}.mp4")
             writer = cv2.VideoWriter(vid_path, cv2.VideoWriter_fourcc(*"mp4v"), fps, (W, H))
             kps, skip, redo = [], False, False
+            hand_visible_frames = 0
 
             for fi in range(num_frames):
                 ok, frame = cam.read()
@@ -115,6 +177,9 @@ def collect(word_list, num_samples=None, num_frames=None):
 
                 ts += 33  # ~30fps timestamp increment
                 pose_r, hand_r, face_r = detect_landmarks(pose_lm, hand_lm, face_lm, frame, ts)
+                hands_now = count_detected_hands(hand_r)
+                if hands_now:
+                    hand_visible_frames += 1
 
                 d = frame.copy()
                 draw_landmarks(d, pose_r, hand_r, face_r)
@@ -130,6 +195,8 @@ def collect(word_list, num_samples=None, num_frames=None):
                             (90,38), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (255,255,255), 2)
                 cv2.putText(d, f"[{wi+1}/{len(word_list)}]",
                             (W-110,38), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (0,255,255), 2)
+                cv2.putText(d, f"Hands detected: {hands_now}", (90, 60),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (200, 255, 200), 1)
 
                 # Progress
                 pct = fi / num_frames
@@ -153,9 +220,16 @@ def collect(word_list, num_samples=None, num_frames=None):
                 else: print(f"    >> Redo {seq}")
                 continue
 
+            min_hand_frames = max(1, int(num_frames * MIN_SIGN_HAND_VISIBILITY_RATIO))
+            if word != idle_label and hand_visible_frames < min_hand_frames:
+                if os.path.exists(vid_path): os.remove(vid_path)
+                print(f"    >> Rejected {seq}: only {hand_visible_frames}/{num_frames} frames had hands visible.")
+                print("       Redo the clip with hands kept in frame for more of the sign.")
+                continue
+
             np.save(os.path.join(lm_dir, f"{word}_{seq}.npy"), np.array(kps))
             done += 1; seq += 1
-            print(f"    Saved ({done}/{num_samples})")
+            print(f"    Saved ({done}/{num_samples}) | hand-visible frames: {hand_visible_frames}/{num_frames}")
 
             # Pause — live camera, blue border
             if done < num_samples:
