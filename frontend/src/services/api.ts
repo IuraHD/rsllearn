@@ -215,15 +215,31 @@ export interface SignRecognitionResponse {
   prediction: string;
   confidence: number;
   all_predictions: SignPrediction[];
+  target_label?: string;
+  target_confidence?: number | null;
+  target_rank?: number | null;
+  idle_confidence?: number | null;
+  selected_window?: {
+    start_ratio: number;
+    end_ratio: number;
+  };
+  required_sequence_length?: number;
+  required_feature_size?: number;
   error?: string;
 }
 
 export interface SignStatusResponse {
   success: boolean;
   model_loaded: boolean;
+  model_exists?: boolean;
   model_path: string;
+  feature_scaler_path?: string;
   classes: string[];
   classes_count: number;
+  required_sequence_length?: number;
+  required_feature_size?: number;
+  feature_scaler_available?: boolean;
+  model_error?: string | null;
 }
 
 export const signAPI = {
@@ -238,10 +254,20 @@ export const signAPI = {
   },
 
   // Recognise sign from landmarks sequence
-  recognise: async (landmarks: number[][]): Promise<SignRecognitionResponse> => {
+  recognise: async (
+    landmarks: number[][],
+    options?: {
+      targetLabel?: string;
+      topK?: number;
+    }
+  ): Promise<SignRecognitionResponse> => {
     return apiFetch('/sign/recognise', {
       method: 'POST',
-      body: JSON.stringify({ landmarks }),
+      body: JSON.stringify({
+        landmarks,
+        targetLabel: options?.targetLabel,
+        topK: options?.topK,
+      }),
     });
   },
 };

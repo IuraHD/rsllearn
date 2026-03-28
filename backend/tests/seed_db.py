@@ -1,4 +1,5 @@
 import json
+import os
 from pathlib import Path
 import sys
 import traceback
@@ -8,7 +9,8 @@ BACKEND_DIR = Path(__file__).resolve().parents[1]
 sys.path.append(str(BACKEND_DIR))
 
 from app.db.database import SessionLocal, engine, Base
-from app.db.models import Unit, Lesson, Task, Achievement
+from app.db import crud
+from app.db.models import Unit, Lesson, Task, Achievement, User
 
 # Seed fixture is intentionally colocated under tests/
 DATA_PATH = Path(__file__).resolve().parent / "fixtures" / "contentSeed.json"
@@ -16,6 +18,162 @@ DATA_PATH = Path(__file__).resolve().parent / "fixtures" / "contentSeed.json"
 def load_data():
     with DATA_PATH.open("r", encoding="utf-8") as f:
         return json.load(f)
+
+
+def _dedupe_keep_order(values):
+    seen = set()
+    ordered = []
+    for value in values:
+        if value in seen:
+            continue
+        seen.add(value)
+        ordered.append(value)
+    return ordered
+
+
+def _build_unit_sign_pools(lessons):
+    pools = {}
+    for lesson in lessons:
+        unit_id = lesson["unitId"]
+        pools.setdefault(unit_id, [])
+        pools[unit_id].extend(lesson.get("signs", []))
+
+    return {unit_id: _dedupe_keep_order(signs) for unit_id, signs in pools.items()}
+
+
+def _pick_distractors(unit_pool, lesson_signs, target_sign, count=3):
+    ordered = [sign for sign in lesson_signs if sign != target_sign]
+    ordered.extend(sign for sign in unit_pool if sign != target_sign and sign not in ordered)
+    return ordered[:count]
+
+
+def _rotate_options(options, seed):
+    if not options:
+        return options
+    offset = seed % len(options)
+    return options[offset:] + options[:offset]
+
+
+def _build_text_options(lesson_id, task_id, target_sign, distractor_signs, seed):
+    option_signs = _rotate_options([target_sign, *distractor_signs], seed)
+    return [
+        {
+            "id": f"{task_id}-opt-{index + 1}",
+            "text": sign,
+            "isCorrect": sign == target_sign,
+        }
+        for index, sign in enumerate(option_signs)
+    ]
+
+
+def _build_video_options(task_id, target_sign, distractor_signs, seed):
+    option_signs = _rotate_options([target_sign, *distractor_signs], seed)
+    return [
+        {
+            "id": f"{task_id}-opt-{index + 1}",
+            "videoUrl": f"{sign}.mp4",
+            "isCorrect": sign == target_sign,
+        }
+        for index, sign in enumerate(option_signs)
+    ]
+
+
+def generate_tasks_from_lessons(lessons):
+    tasks = []
+    unit_sign_pools = _build_unit_sign_pools(lessons)
+
+    for lesson in lessons:
+        lesson_id = lesson["id"]
+        unit_id = lesson["unitId"]
+        lesson_signs = lesson.get("signs", [])
+        task_index = 1
+
+        for sign in lesson_signs:
+            tasks.append({
+                "id": f"{lesson_id}-repeat-{task_index}",
+                "lessonId": lesson_id,
+                "type": "REPEAT_SIGN",
+                "orderIndex": task_index,
+                "promptText": f"Invata semnul: {sign}",
+                "expectedLabel": sign,
+                "minConfidence": 0.7,
+                "signVideoUrl": f"{sign}.mp4",
+            })
+            task_index += 1
+
+            tasks.append({
+                "id": f"{lesson_id}-text-{task_index}",
+                "lessonId": lesson_id,
+                "type": "TEXT_TO_SIGN",
+                "orderIndex": task_index,
+                "promptText": f"Arata semnul pentru '{sign}'",
+                "expectedLabel": sign,
+                "minConfidence": 0.75,
+                "signVideoUrl": f"{sign}.mp4",
+            })
+            task_index += 1
+
+        for sign_index, sign in enumerate(lesson_signs):
+            distractors = _pick_distractors(unit_sign_pools[unit_id], lesson_signs, sign)
+            task_id = f"{lesson_id}-quiz-text-{task_index}"
+            tasks.append({
+                "id": task_id,
+                "lessonId": lesson_id,
+                "type": "SIGN_TO_TEXT",
+                "orderIndex": task_index,
+                "promptText": "Ce semn este acesta?",
+                "videoUrl": f"{sign}.mp4",
+                "options": _build_text_options(
+                    lesson_id=lesson_id,
+                    task_id=task_id,
+                    target_sign=sign,
+                    distractor_signs=distractors,
+                    seed=sign_index + 1,
+                ),
+            })
+            task_index += 1
+
+        for sign_index, sign in enumerate(lesson_signs):
+            distractors = _pick_distractors(unit_sign_pools[unit_id], lesson_signs, sign)
+            task_id = f"{lesson_id}-quiz-video-{task_index}"
+            tasks.append({
+                "id": task_id,
+                "lessonId": lesson_id,
+                "type": "VIDEO_MULTIPLE_CHOICE",
+                "orderIndex": task_index,
+                "promptText": f"Care videoclip arata semnul '{sign}'?",
+                "options": _build_video_options(
+                    task_id=task_id,
+                    target_sign=sign,
+                    distractor_signs=distractors,
+                    seed=sign_index + 2,
+                ),
+            })
+            task_index += 1
+
+    return tasks
+
+
+def seed_default_admin(db):
+    admin_email = (os.getenv("ADMIN_EMAIL") or "admin@example.com").strip().lower()
+    admin_password = os.getenv("ADMIN_PASSWORD") or "admin123"
+    admin_name = (os.getenv("ADMIN_DISPLAY_NAME") or "Admin").strip() or "Admin"
+
+    admin_user = User(
+        id="admin-user",
+        email=admin_email,
+        name=admin_name,
+        hashed_password=crud.get_password_hash(admin_password),
+        xp=0,
+        daily_streak=0,
+        level=1,
+        level_progress=0,
+        badges=[],
+        is_admin=True,
+    )
+    db.add(admin_user)
+    db.commit()
+    print(f"Seeded default admin user: {admin_email}")
 
 def seed_database():
     print("Seeding database...")
@@ -59,7 +217,8 @@ def seed_database():
         
         # Seed Tasks
         task_count = 0
-        for t_data in data["tasks"]:
+        task_seed_data = data.get("tasks") or generate_tasks_from_lessons(data["lessons"])
+        for t_data in task_seed_data:
             task = Task(
                 id=t_data["id"],
                 lesson_id=t_data["lessonId"],
@@ -128,6 +287,14 @@ def seed_database():
                 "condition_type": "unit_completed",
                 "condition_value": "u3"
             },
+            {
+                "id": "ach_perfect",
+                "title": "Fara Greseli",
+                "description": "Ai completat o lectie fara nicio greseala.",
+                "icon": "badge-perfect",
+                "condition_type": "manual",
+                "condition_value": "perfect_lesson"
+            },
             # Difficulty-based achievements removed (difficulty system no longer used).
         ]
         
@@ -143,6 +310,8 @@ def seed_database():
             db.add(ach)
         db.commit()
         print(f"Seeded {len(achievements_data)} achievements")
+
+        seed_default_admin(db)
         
     except Exception as e:
         print(f"Error seeding database: {e}")

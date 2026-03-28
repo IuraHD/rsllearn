@@ -33,9 +33,32 @@ def _resolve_asset_path(env_var: str, legacy_backend_default: str, preferred: st
 MODEL_PATH = _resolve_asset_path("MODEL_PATH", "model_latest.h5", os.path.join("RSLdataset", "saved_models", "best_model.h5"))
 CLASSES_PATH = _resolve_asset_path("CLASSES_PATH", "classes.txt", os.path.join("RSLdataset", "saved_models", "sign_classes.txt"))
 
+
+def _resolve_feature_scaler_path() -> str:
+    env_val = os.getenv("FEATURE_SCALER_PATH")
+    if env_val:
+        return os.path.abspath(os.path.join(str(BACKEND_DIR), env_val))
+
+    preferred = os.path.abspath(os.path.join(os.path.dirname(MODEL_PATH), "feature_scaler.npz"))
+    if os.path.exists(preferred):
+        return preferred
+
+    return os.path.abspath(os.path.join(str(BACKEND_DIR), "feature_scaler.npz"))
+
+
+FEATURE_SCALER_PATH = _resolve_feature_scaler_path()
+TEMPORAL_VIEW_WINDOWS = (
+    (0.0, 1.0),
+    (0.05, 0.95),
+    (0.1, 0.9),
+    (0.15, 0.85),
+    (0.2, 0.8),
+)
+
 # Global model cache
 _model = None
 _classes = None
+_scaler = None
 
 # Key face points used by trainer when feature size is 429.
 # Keep in sync with RSLdataset/utils.py FACE_KEY_INDICES.
@@ -47,9 +70,17 @@ FACE_KEY_INDICES = sorted(set([
     13, 17, 61, 78, 82, 84, 87, 91, 146, 178, 181, 291, 308, 310, 311, 312, 314, 321, 375, 405,
 ]))
 
-DEFAULT_SEQUENCE_LENGTH = 90
+DEFAULT_SEQUENCE_LENGTH = 60
 # Pose(33×3) + Face(key_indices×3) + LH(21×3) + RH(21×3)
 DEFAULT_FEATURE_SIZE = 99 + (len(FACE_KEY_INDICES) * 3) + 63 + 63
+IDLE_CLASS_LABELS = {
+    "idle",
+    "no sign",
+    "no_sign",
+    "background",
+    "rest",
+    "neutral",
+}
 
 
 def _int_env(name: str, default: int) -> int:
@@ -59,13 +90,126 @@ def _int_env(name: str, default: int) -> int:
         return default
 
 
+def normalize_label_name(name: str | None) -> str:
+    return (name or "").strip().lower().replace("-", " ").replace("_", " ")
+
+
+def _find_idle_index(classes: list[str]) -> int | None:
+    for idx, cls in enumerate(classes):
+        if normalize_label_name(cls) in IDLE_CLASS_LABELS:
+            return idx
+    return None
+
+
+def _resample_sequence(sequence: np.ndarray, target_len: int) -> np.ndarray:
+    seq = np.asarray(sequence, dtype=np.float32)
+    if len(seq) == 0:
+        return np.zeros((target_len, seq.shape[-1] if seq.ndim == 2 else 0), dtype=np.float32)
+    if len(seq) == target_len:
+        return seq
+    if len(seq) == 1:
+        return np.repeat(seq, target_len, axis=0)
+
+    positions = np.linspace(0, len(seq) - 1, num=target_len, dtype=np.float32)
+    lower = np.floor(positions).astype(int)
+    upper = np.ceil(positions).astype(int)
+    alpha = (positions - lower).reshape(-1, 1).astype(np.float32)
+    return seq[lower] * (1.0 - alpha) + seq[upper] * alpha
+
+
+def _crop_sequence(sequence: np.ndarray, start_ratio: float, end_ratio: float) -> np.ndarray:
+    seq = np.asarray(sequence, dtype=np.float32)
+    if len(seq) == 0:
+        return seq
+
+    start = max(0, min(len(seq) - 1, int(np.floor(len(seq) * start_ratio))))
+    end = max(start + 1, min(len(seq), int(np.ceil(len(seq) * end_ratio))))
+    return seq[start:end]
+
+
+def _predict_temporal_views(
+    model,
+    sequence: np.ndarray,
+    scaler,
+    classes: list[str],
+    expected_sequence_length: int,
+    target_label: str | None = None,
+):
+    """Run a few temporal crops and choose the best-scoring view for the caller's use case."""
+    normalized_target = normalize_label_name(target_label)
+    target_idx = None
+    if normalized_target:
+        for idx, cls in enumerate(classes):
+            if normalize_label_name(cls) == normalized_target:
+                target_idx = idx
+                break
+
+    idle_idx = _find_idle_index(classes)
+    view_predictions: list[dict] = []
+
+    for start_ratio, end_ratio in TEMPORAL_VIEW_WINDOWS:
+        cropped = _crop_sequence(sequence, start_ratio, end_ratio)
+        if len(cropped) == 0:
+            continue
+        view_sequence = _resample_sequence(cropped, expected_sequence_length)
+        if scaler:
+            view_sequence = apply_feature_scaler(view_sequence, scaler)
+
+        probs = model.predict(np.expand_dims(view_sequence, axis=0), verbose=0)[0]
+        probs = np.asarray(probs, dtype=np.float32)
+        top_idx = int(np.argmax(probs))
+        top_conf = float(probs[top_idx])
+        non_idle_conf = top_conf
+        if idle_idx is not None and len(probs) > 1:
+            masked = probs.copy()
+            masked[idle_idx] = -1.0
+            non_idle_conf = float(np.max(masked))
+
+        target_conf = float(probs[target_idx]) if target_idx is not None else None
+        view_predictions.append({
+            "window": {"start_ratio": start_ratio, "end_ratio": end_ratio},
+            "probs": probs,
+            "top_idx": top_idx,
+            "top_conf": top_conf,
+            "non_idle_conf": non_idle_conf,
+            "target_conf": target_conf,
+            "is_idle_top1": idle_idx is not None and top_idx == idle_idx,
+        })
+
+    if not view_predictions:
+        raise ValueError("No valid temporal views available for inference")
+
+    selected = view_predictions[0]
+
+    if target_idx is not None:
+        selected = max(
+            view_predictions,
+            key=lambda item: (
+                item["target_conf"] if item["target_conf"] is not None else -1.0,
+                0 if item["is_idle_top1"] else 1,
+                item["top_conf"],
+            ),
+        )
+    elif idle_idx is not None and selected["is_idle_top1"]:
+        selected = max(
+            view_predictions,
+            key=lambda item: (
+                0 if item["is_idle_top1"] else 1,
+                item["non_idle_conf"],
+                item["top_conf"],
+            ),
+        )
+
+    return selected, target_idx, idle_idx
+
+
 def _read_trainer_meta() -> tuple[int | None, int | None]:
     """
     Read trainer metadata from `model_meta.txt` if present (RSLdataset trainer output).
 
     The trainer writes:
       features=429
-      sequence_length=90
+      sequence_length=60
     """
     meta_path = os.path.join(os.path.dirname(MODEL_PATH), "model_meta.txt")
     if not os.path.exists(meta_path):
@@ -140,15 +284,58 @@ def load_model():
         raise FileNotFoundError("Model not deployed")
 
     try:
+        from tensorflow.keras.layers import LSTMCell, RNN
         from tensorflow.keras.models import load_model as keras_load_model
     except ImportError:
         raise RuntimeError("TensorFlow not installed on server")
 
+    class CompatibilityRNN(RNN):
+        """Ignore legacy H5 config fields that newer Keras versions no longer accept."""
+
+        def __init__(self, *args, **kwargs):
+            kwargs.pop("time_major", None)
+            super().__init__(*args, **kwargs)
+
+        @classmethod
+        def from_config(cls, config):
+            config = dict(config)
+            config.pop("time_major", None)
+            return super().from_config(config)
+
     if _model is None:
-        _model = keras_load_model(MODEL_PATH)
+        custom_objects = {
+            "LSTMCell": LSTMCell,
+            "RNN": CompatibilityRNN,
+        }
+        _model = keras_load_model(MODEL_PATH, compile=False, custom_objects=custom_objects)
         _classes = load_classes()
 
     return _model, _classes
+
+
+def load_feature_scaler():
+    """Load and cache trainer feature standardization values if available."""
+    global _scaler
+
+    if _scaler is not None:
+        return _scaler
+
+    if not os.path.exists(FEATURE_SCALER_PATH):
+        return None
+
+    data = np.load(FEATURE_SCALER_PATH)
+    mean = np.asarray(data["mean"], dtype=np.float32)
+    std = np.asarray(data["std"], dtype=np.float32)
+    std[std < 1e-6] = 1.0
+    _scaler = {"mean": mean, "std": std}
+    return _scaler
+
+
+def apply_feature_scaler(sequence: np.ndarray, scaler):
+    """Apply the same per-feature standardization used during training."""
+    if not scaler:
+        return np.asarray(sequence, dtype=np.float32)
+    return (np.asarray(sequence, dtype=np.float32) - scaler["mean"]) / scaler["std"]
 
 
 def _infer_expected_shape(model) -> tuple[int, int]:
@@ -179,6 +366,7 @@ def get_status():
     classes = load_classes()
     sequence_length = get_sequence_length()
     feature_size = get_feature_size()
+    scaler_exists = os.path.exists(FEATURE_SCALER_PATH)
     model_loaded = False
     model_error = None
 
@@ -195,10 +383,12 @@ def get_status():
         "model_loaded": model_loaded,
         "model_exists": model_exists,
         "model_path": MODEL_PATH,
+        "feature_scaler_path": FEATURE_SCALER_PATH,
         "classes": classes,
         "classes_count": len(classes),
         "required_sequence_length": sequence_length,
         "required_feature_size": feature_size,
+        "feature_scaler_available": scaler_exists,
         "model_error": model_error,
     }
 
@@ -272,9 +462,36 @@ def recognise_sign(data: dict = Body(...)):
         if not classes:
             return {"success": False, "error": "No classes defined. Check classes.txt"}
 
-        prediction = model.predict(np.expand_dims(sequence, axis=0), verbose=0)[0]
+        scaler = load_feature_scaler()
+        if scaler:
+            if scaler["mean"].shape[0] != expected_feature_size:
+                return {
+                    "success": False,
+                    "error": (
+                        "Feature scaler size does not match the deployed model. "
+                        f"Expected {expected_feature_size}, got {scaler['mean'].shape[0]}"
+                    ),
+                }
+            sequence = np.asarray(sequence, dtype=np.float32)
 
-        top_indices = np.argsort(prediction)[::-1][:5]
+        target_label = data.get("target_label") or data.get("targetLabel")
+        try:
+            top_k = int(data.get("top_k") or data.get("topK") or 5)
+        except (TypeError, ValueError):
+            top_k = 5
+        top_k = max(1, min(top_k, len(classes)))
+
+        selected_view, target_idx, idle_idx = _predict_temporal_views(
+            model=model,
+            sequence=sequence,
+            scaler=scaler,
+            classes=classes,
+            expected_sequence_length=expected_sequence_length,
+            target_label=target_label,
+        )
+        prediction = selected_view["probs"]
+
+        top_indices = np.argsort(prediction)[::-1][:top_k]
         results = []
         for idx in top_indices:
             sign_name = classes[idx] if idx < len(classes) else f"class_{int(idx)}"
@@ -286,12 +503,23 @@ def recognise_sign(data: dict = Body(...)):
         best_idx = int(np.argmax(prediction))
         best_sign = classes[best_idx] if best_idx < len(classes) else f"class_{best_idx}"
         best_confidence = float(prediction[best_idx])
+        target_confidence = float(prediction[target_idx]) if target_idx is not None else None
+        target_rank = None
+        if target_idx is not None:
+            order = np.argsort(prediction)[::-1]
+            target_rank = int(np.where(order == target_idx)[0][0]) + 1
+        idle_confidence = float(prediction[idle_idx]) if idle_idx is not None else None
 
         return {
             "success": True,
             "prediction": best_sign,
             "confidence": best_confidence,
             "all_predictions": results,
+            "target_label": target_label,
+            "target_confidence": target_confidence,
+            "target_rank": target_rank,
+            "idle_confidence": idle_confidence,
+            "selected_window": selected_view["window"],
             "required_sequence_length": expected_sequence_length,
             "required_feature_size": expected_feature_size,
         }

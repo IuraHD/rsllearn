@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Icon } from '@/components/ui/Icon';
 import { resolveLessonMediaUrl } from '@/media/lessonMediaRegistry';
 
@@ -8,12 +8,28 @@ interface PromptVideoProps {
 
 export const PromptVideo: React.FC<PromptVideoProps> = ({ videoUrl }) => {
   const src = resolveLessonMediaUrl(videoUrl);
+  const [hasError, setHasError] = useState(false);
 
-  return src ? (
+  useEffect(() => {
+    setHasError(false);
+  }, [src]);
+
+  return src && !hasError ? (
     <div className="relative group mb-6 sm:mb-10 mx-auto max-w-md md:max-w-lg lg:max-w-xl w-full">
       <div className="absolute -inset-1 bg-gradient-to-r from-primary to-accent-blue rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
       <div className="relative bg-white w-full aspect-video rounded-xl flex items-center justify-center shadow-lifted overflow-hidden border border-light-300">
-        <video src={src} controls playsInline preload="metadata" className="w-full h-full object-cover" />
+        <video
+          key={src}
+          src={src}
+          controls
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="metadata"
+          className="w-full h-full object-cover"
+          onError={() => setHasError(true)}
+        />
       </div>
     </div>
   ) : (

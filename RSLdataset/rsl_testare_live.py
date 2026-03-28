@@ -39,6 +39,14 @@ REALTIME_INFER_STRIDE = 3
 REALTIME_MAX_SEGMENT_FRAMES = FRAMES_PER_SAMPLE * 2
 DISPLAY_HOLD_FRAMES = 12
 HAND_FEATURE_SLICE = slice(-126, None)
+DISPLAY_TOP_K = 6
+TEMPORAL_VIEW_WINDOWS = (
+    (0.0, 1.0),
+    (0.05, 0.95),
+    (0.1, 0.9),
+    (0.15, 0.85),
+    (0.2, 0.8),
+)
 
 BAR_COLORS = [
     (46,204,113),(52,152,219),(231,76,60),(241,196,15),(155,89,182),
@@ -63,27 +71,33 @@ def _load_seq_len():
     return FRAMES_PER_SAMPLE
 
 
-def draw_confidence(img, classes, probs, W, H, display_label=None, display_confidence=None):
-    """Draw confidence bars + prediction overlay."""
+def draw_confidence(img, classes, probs, W, H, display_label=None, display_confidence=None, top_k=DISPLAY_TOP_K):
+    """Draw confidence bars for the strongest predictions + prediction overlay."""
     n = len(classes)
-    if not n: return
+    if not n:
+        return
+
+    top_k = max(1, min(top_k, n))
+    ranked = np.argsort(probs)[::-1][:top_k]
 
     # Panel
     pw, bh, gap, pad = 280, 22, 6, 15
-    ph = pad*2 + n*(bh+gap) + 50
+    ph = pad*2 + top_k*(bh+gap) + 50
     px, py = W-pw-15, H-ph-15
 
     ov = img.copy()
     cv2.rectangle(ov, (px,py), (px+pw,py+ph), (30,30,30), -1)
     cv2.addWeighted(ov, 0.75, img, 0.25, 0, img)
     cv2.rectangle(img, (px,py), (px+pw,py+ph), (80,80,80), 1)
-    cv2.putText(img, "PREDICTIONS", (px+pad,py+25), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (200,200,200), 1)
+    cv2.putText(img, f"TOP {top_k} PREDICTIONS", (px+pad,py+25), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (200,200,200), 1)
 
     mbw = pw - 2*pad - 62
 
-    for i, (name, p) in enumerate(zip(classes, probs)):
-        y = py + 45 + i*(bh+gap)
-        col = BAR_COLORS[i % len(BAR_COLORS)]
+    for row, class_idx in enumerate(ranked):
+        name = classes[class_idx]
+        p = float(probs[class_idx])
+        y = py + 45 + row*(bh+gap)
+        col = BAR_COLORS[row % len(BAR_COLORS)]
         bx = px + pad + 62
         cv2.putText(img, name[:8], (px+pad, y+bh-6), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (200,200,200), 1)
         cv2.rectangle(img, (bx,y), (bx+mbw,y+bh), (60,60,60), -1)
@@ -143,6 +157,60 @@ def _resample_sequence(sequence, target_len):
     return seq[lower] * (1.0 - alpha) + seq[upper] * alpha
 
 
+def _crop_sequence(sequence, start_ratio, end_ratio):
+    """Crop the active segment to reduce preparation / recovery frames."""
+    seq = np.asarray(sequence, dtype=np.float32)
+    if len(seq) == 0:
+        return seq
+    start = max(0, min(len(seq) - 1, int(np.floor(len(seq) * start_ratio))))
+    end = max(start + 1, min(len(seq), int(np.ceil(len(seq) * end_ratio))))
+    return seq[start:end]
+
+
+def _predict_temporal_views(model, sequence, seq_len, scaler, idle_label, classes):
+    """Choose a stronger final prediction by checking a few temporal crops."""
+    outputs = []
+    idle_idx = classes.index(idle_label) if idle_label in classes else None
+
+    for start_ratio, end_ratio in TEMPORAL_VIEW_WINDOWS:
+        cropped = _crop_sequence(sequence, start_ratio, end_ratio)
+        if len(cropped) == 0:
+            continue
+        seq = _resample_sequence(cropped, seq_len)
+        seq = apply_feature_scaler(seq, scaler)
+        probs = model.predict(np.expand_dims(seq, 0), verbose=0)[0]
+        top_idx = int(np.argmax(probs))
+        top_conf = float(probs[top_idx])
+        is_idle_top1 = idle_idx is not None and top_idx == idle_idx
+        non_idle_conf = top_conf
+        if idle_idx is not None and len(probs) > 1:
+            masked = np.asarray(probs, dtype=np.float32).copy()
+            masked[idle_idx] = -1.0
+            non_idle_conf = float(np.max(masked))
+        outputs.append({
+            "probs": probs,
+            "top_idx": top_idx,
+            "top_conf": top_conf,
+            "is_idle_top1": is_idle_top1,
+            "non_idle_conf": non_idle_conf,
+        })
+
+    if not outputs:
+        return None
+
+    selected = outputs[0]
+    if selected["is_idle_top1"]:
+        selected = max(
+            outputs,
+            key=lambda item: (
+                0 if item["is_idle_top1"] else 1,
+                item["non_idle_conf"],
+                item["top_conf"],
+            ),
+        )
+    return selected["probs"]
+
+
 def _hand_motion_score(previous_keypoints, current_keypoints):
     """Estimate short-term hand motion from the hand feature slice only."""
     if previous_keypoints is None:
@@ -163,7 +231,8 @@ def run(model_path=None, device="auto", gpu_index=None,
         end_static_frames=REALTIME_END_STATIC_FRAMES,
         start_motion=REALTIME_START_MOTION,
         hold_motion=REALTIME_HOLD_MOTION,
-        infer_stride=REALTIME_INFER_STRIDE):
+        infer_stride=REALTIME_INFER_STRIDE,
+        top_k=DISPLAY_TOP_K):
     device_info = configure_tensorflow_runtime(device=device, gpu_index=gpu_index)
     print(f"Live tester execution device: {device_info['device_used']}")
     if not device_info["tensorflow_version"]:
@@ -296,6 +365,20 @@ def run(model_path=None, device="auto", gpu_index=None,
                         segment_announced_label = stable_label
 
                 if static_frames >= end_static_frames:
+                    refined_probs = _predict_temporal_views(model, segment_frames, seq_len, scaler, idle_label, classes)
+                    if refined_probs is not None:
+                        last_probs = refined_probs
+                        refined_idx = int(np.argmax(refined_probs))
+                        refined_label = classes[refined_idx]
+                        refined_conf = float(refined_probs[refined_idx])
+                        if not idle_label or refined_label != idle_label:
+                            display_label = refined_label
+                            display_conf = refined_conf
+                            display_hold = DISPLAY_HOLD_FRAMES
+                            if segment_announced_label != refined_label:
+                                print(f"[LIVE FINAL] Prediction: {refined_label} | Confidence: {refined_conf:.4f}")
+                                segment_announced_label = refined_label
+
                     segment_active = False
                     segment_frames = []
                     segment_hands = []
@@ -318,7 +401,7 @@ def run(model_path=None, device="auto", gpu_index=None,
                 display_label = None
                 display_conf = None
 
-        draw_confidence(d, classes, last_probs, W, H, show_label, show_conf)
+        draw_confidence(d, classes, last_probs, W, H, show_label, show_conf, top_k=top_k)
         state = "SIGNING" if segment_active else ("COOLDOWN" if cooldown_frames > 0 else "IDLE")
         hand_ratio = sum(segment_hands) / len(segment_hands) if segment_hands else 0.0
         cv2.putText(d, f"State: {state}", (20, 85),
@@ -347,6 +430,7 @@ if __name__ == "__main__":
     p.add_argument("--start-motion", type=float, default=REALTIME_START_MOTION)
     p.add_argument("--hold-motion", type=float, default=REALTIME_HOLD_MOTION)
     p.add_argument("--infer-stride", type=int, default=REALTIME_INFER_STRIDE)
+    p.add_argument("--top-k", type=int, default=DISPLAY_TOP_K)
     p.add_argument("--list-devices", action="store_true")
     a = p.parse_args()
     if a.list_devices:
@@ -364,4 +448,5 @@ if __name__ == "__main__":
             a.start_motion,
             a.hold_motion,
             a.infer_stride,
+            a.top_k,
         )

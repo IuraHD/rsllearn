@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Task, Lesson, User } from '@/types';
 import { Mascot } from '@/components/ui/Mascot';
-import { CameraOverlay } from '@/components/camera/CameraOverlay';
+import { CameraOverlay, type CameraEvaluationResult } from '@/components/camera/CameraOverlay';
 import { Icon } from '@/components/ui/Icon';
 import { api } from '@/services/api';
 import { evaluateSelectionTask, getTaskTypeModule, isCameraTaskType, isCheckDisabledForTask } from '@/lesson/taskTypeModules';
@@ -84,6 +84,7 @@ export const LessonScreen: React.FC<{ lessonId: string; onExit: (updatedUser: Us
     const [isComplete, setIsComplete] = useState(false);
     const [mistakes, setMistakes] = useState(0);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [cameraAttempt, setCameraAttempt] = useState<CameraEvaluationResult | null>(null);
 
     useEffect(() => {
         const fetchLesson = async () => {
@@ -137,6 +138,7 @@ export const LessonScreen: React.FC<{ lessonId: string; onExit: (updatedUser: Us
         if (!lesson) return;
         setFeedback(null);
         setSelectedOption(null);
+        setCameraAttempt(null);
         if (taskIndex < lesson.tasks.length - 1) {
             setTaskIndex(taskIndex + 1);
         } else {
@@ -167,9 +169,14 @@ export const LessonScreen: React.FC<{ lessonId: string; onExit: (updatedUser: Us
         }
     };
 
-    const handleCameraComplete = (success: boolean, score: number) => {
+    const handleCameraComplete = (attempt: CameraEvaluationResult) => {
         setShowCamera(false);
-        if (success) {
+        setCameraAttempt(attempt);
+        if (attempt.noSignDetected) {
+            setFeedback(null);
+            return;
+        }
+        if (attempt.success) {
             setFeedback('correct');
         } else {
             setFeedback('incorrect');
@@ -221,6 +228,7 @@ export const LessonScreen: React.FC<{ lessonId: string; onExit: (updatedUser: Us
     };
 
     const getCorrectAnswerLabel = (task: Task) => {
+        if (task.expectedLabel) return task.expectedLabel;
         const correctOption = task.options?.find((o) => o.isCorrect);
         if (!correctOption) return 'N/A';
         if (correctOption.text) return correctOption.text;
@@ -306,6 +314,14 @@ export const LessonScreen: React.FC<{ lessonId: string; onExit: (updatedUser: Us
                                     {feedback === 'correct' ? 'Excelent!' : 'Greșit...'}
                                 </h3>
                                 {feedback === 'incorrect' && <p className="text-dark-200 font-medium">Răspunsul corect era: <span className="font-bold">{getCorrectAnswerLabel(currentTask)}</span></p>}
+                                {feedback === 'incorrect' && cameraAttempt?.predictedLabel && (
+                                    <p className="text-dark-200 font-medium">
+                                        Modelul a detectat: <span className="font-bold">{cameraAttempt.predictedLabel}</span> ({cameraAttempt.score}%)
+                                    </p>
+                                )}
+                                {feedback === 'incorrect' && cameraAttempt?.error && (
+                                    <p className="text-dark-200 font-medium">{cameraAttempt.error}</p>
+                                )}
                             </div>
                         </div>
                     ) : (
