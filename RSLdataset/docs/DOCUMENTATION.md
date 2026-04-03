@@ -26,15 +26,16 @@ Open PowerShell in the toolkit folder:
 cd C:\Users\IuraHD\Desktop\disertation\rsl\RSLdataset
 ```
 
-Create and activate a virtual environment if needed:
+Create and activate the shared project environment if needed:
 
 ```powershell
-python -m venv .venv
+cd C:\Users\IuraHD\Desktop\disertation\rsl
+.\setup_python_env.bat
 .\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
+cd .\RSLdataset
 ```
 
-If the environment already exists, only activate it and install requirements if needed.
+This toolkit now uses the single shared root `.venv`.
 
 ## How To Run
 
