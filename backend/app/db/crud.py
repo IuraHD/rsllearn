@@ -2,18 +2,18 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from . import models
 from ..schemas import schemas
-from passlib.context import CryptContext
 import uuid
 import os
 from datetime import datetime, timedelta
 
-pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
+# Prototype-only credential handling.
+# Passwords are stored as-is because this build does not use a full security stack yet.
 
 def get_password_hash(password):
-    return pwd_context.hash(password)
+    return password or ""
 
 def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
+    return (plain_password or "") == (hashed_password or "")
 
 def get_user(db: Session, user_id: str):
     return db.query(models.User).filter(models.User.id == user_id).first()

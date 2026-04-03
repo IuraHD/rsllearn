@@ -1,125 +1,193 @@
-# RSLlingo 🐾
+# RSLlingo
 
-<p align="center">
-  <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/Animals/Bear.png" alt="Bear" width="120" />
-</p>
+RSLlingo is a Romanian Sign Language learning platform with:
 
-<p align="center">
-  <strong>An Intelligent Learning Platform for Romanian Sign Language (RSL)</strong><br />
-  <em>Leveraging Computer Vision & Deep Learning to Bridge Communication Gaps</em>
-</p>
+- a FastAPI backend in `backend/`
+- a React + Vite frontend in `frontend/`
+- a dataset/training toolkit in `RSLdataset/`
 
-<p align="center">
-  <img alt="React" src="https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=000" />
-  <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5-3178C6?style=for-the-badge&logo=typescript&logoColor=fff" />
-  <img alt="FastAPI" src="https://img.shields.io/badge/FastAPI-0.110+-009688?style=for-the-badge&logo=fastapi&logoColor=fff" />
-  <img alt="TensorFlow" src="https://img.shields.io/badge/TensorFlow-2-FF6F00?style=for-the-badge&logo=tensorflow&logoColor=fff" />
-  <img alt="SQLite" src="https://img.shields.io/badge/SQLite-3-003B57?style=for-the-badge&logo=sqlite&logoColor=fff" />
-</p>
+This repository now uses **one shared Python virtual environment** for the whole project:
 
----
+- shared venv: `C:\Users\IuraHD\Desktop\disertation\rsl\.venv`
+- do not create separate virtual environments in `backend/` or `RSLdataset/`
 
-## 🎓 Dissertation Profile
+## Version Requirements
 
-| Field | Details |
-| :--- | :--- |
-| **Author** | **Iurie Virlan** |
-| **Institution** | **Arden University** |
-| **Student ID** | **STU171970** |
-| **Project Type** | Final Year Dissertation (Prototype) |
-| **Research Area** | Human-Computer Interaction & ML-Assisted Learning |
+### Python
 
----
+Use **Python 3.10.x** for the shared environment.
 
-## 🌟 Project Overview
+Why 3.10:
 
-**RSLlingo** is a comprehensive educational ecosystem designed to democratize access to Romanian Sign Language. Unlike traditional video-based platforms, RSLlingo uses real-time **MediaPipe landmark extraction** and **Keras/TensorFlow inference** to provide instant feedback on the user's signing accuracy.
+- the shared `requirements.txt` uses `tensorflow-directml`
+- that toolkit currently targets Python 3.10 on this project
 
-### 🚀 Core Pillars
-- **Interactive Pedagogy**: A structured learning path with 4 canonical task types:
-  - `REPEAT_SIGN`: Shadowing signs with real-time AI validation.
-  - `TEXT_TO_SIGN`: Testing production skills from written prompts.
-  - `SIGN_TO_TEXT`: Decoding video gestures into meaning.
-  - `VIDEO_MULTIPLE_CHOICE`: Recognizing subtle variations in sign production.
-- **Advanced Gamification**: XP-based progression, daily streaks, level-ups, and a dynamic leaderboard to sustain engagement.
-- **Embedded AI**: Server-side classification of high-dimensional landmark sequences (90 frames x 429 features).
-- **Mascot System**: An animated companion that "patrols" and encourages users throughout their learning journey.
+Validated locally:
 
----
+- Python `3.10.11` for the dataset toolkit
 
-## 🛠️ Technology Stack
+### Node.js / npm
 
-### Frontend
-- **Framework**: `React 19` + `Vite`
-- **Typing**: `TypeScript`
-- **Styling**: `TailwindCSS v4` + `PostCSS`
-- **Vision**: `@mediapipe/tasks-vision` (On-device landmark tracking)
+Use:
 
-### Backend
-- **Engine**: `FastAPI` (Python)
-- **Database**: `SQLite` with `SQLAlchemy ORM`
-- **ML Inference**: `TensorFlow` / `Keras`
-- **Validation**: `Pydantic`
+- Node.js `20+`
+- npm `10+`
 
-### Dataset & Training (Toolkit)
-- **Data Capture**: Custom OpenCV/MediaPipe bridge for recording high-fidelity landmark datasets.
-- **Architecture**: LSTM/Transformer-based neural networks for sequence classification.
+Validated locally:
 
----
+- Node.js `25.2.1`
+- npm `11.6.2`
 
-## 📂 Repository Structure
+## Project Layout
 
 ```text
 rsl/
-├── backend/                # FastAPI Application Server
-│   ├── app/                # Logic, Routers, DB Models, and Services
-│   ├── tests/              # Test suite & Seeding utilities
-│   └── requirements.txt    # Backend dependencies
-├── frontend/               # React Application (SPA)
-│   ├── src/                
-│   │   ├── components/     # UI Design System & Mascot logic
-│   │   ├── screens/        # Main App Views (Learn, Admin, Profile)
-│   │   └── services/       # API abstraction layer
-│   └── package.json        
-├── RSLdataset/             # Machine Learning Pipeline
-│   ├── rsl_data_collector.py  # Dataset gathering tool
-│   ├── rsl_model_trainer.py   # Training script
-│   └── rsl_testare_live.py    # Desktop live verification
-└── start_all.bat           # Unified Windows launcher
+├── .venv/                     # Shared Python virtual environment
+├── backend/                   # FastAPI backend
+├── frontend/                  # React + Vite frontend
+├── RSLdataset/                # Dataset, training, and live-testing tools
+├── requirements.txt           # Shared Python dependencies for the whole repo
+├── setup_enviroment.bat       # Sets up Python and frontend dependencies
+└── start_all.bat              # Starts backend + frontend on Windows
 ```
 
----
+## First-Time Setup
 
-## ⚡ Quick Start
+### 1. Set up the full project environment
 
-### Windows (Automated)
-Simply run the root batch file to spin up both the frontend and backend:
-```bash
+From the repository root:
+
+```bat
+setup_enviroment.bat
+```
+
+What it does:
+
+- creates `.venv` with Python 3.10
+- upgrades `pip`
+- installs all Python dependencies needed by both `backend/` and `RSLdataset/`
+- installs frontend npm dependencies in `frontend/node_modules`
+
+## Running the Project
+
+### Option A: Start backend and frontend together
+
+From the repository root:
+
+```bat
 start_all.bat
 ```
 
-### Manual Configuration
-1. **Prepare Backend**:
-   ```bash
-   cd backend
-   python -m venv .venv
-   source .venv/bin/activate  # .\.venv\Scripts\activate on Windows
-   pip install -r requirements.txt
-   ```
-2. **Prepare Frontend**:
-   ```bash
-   cd frontend
-   npm install
-   npm run dev
-   ```
+Default URLs:
 
----
+- frontend: `http://localhost:5173`
+- backend: `http://localhost:3001`
+- backend docs: `http://localhost:3001/docs`
 
-## 🔐 Prototype Authentication
-The current version uses a prototype header-based identity persistence (`X-User-Id`). Admin features are strictly gated by the `ADMIN_EMAIL` environment variable.
+### Option B: Start each part manually
 
----
+#### Backend
 
-<p align="center">
-  <em>Developed with ❤️ by Iurie Virlan for the RSL Community.</em>
-</p>
+```bat
+cd backend
+run_backend.bat
+```
+
+Debug mode:
+
+```bat
+cd backend
+run_backend_debug.bat
+```
+
+#### Frontend
+
+```bat
+cd frontend
+run_frontend.bat
+```
+
+## Running the Dataset Toolkit
+
+All dataset scripts now use the same shared root `.venv`.
+
+### Data collection
+
+```bat
+cd RSLdataset
+run_collector.bat
+```
+
+### Training
+
+```bat
+cd RSLdataset
+run_training.bat
+```
+
+### Live testing
+
+```bat
+cd RSLdataset
+run_testing.bat
+```
+
+## Manual Python Commands
+
+If you prefer to work directly in the shared environment:
+
+```bat
+.\.venv\Scripts\activate
+```
+
+Then you can run:
+
+```bat
+python -m uvicorn backend.app.main:app --reload --port 3001
+```
+
+or:
+
+```bat
+cd RSLdataset
+python rsl_model_trainer.py
+```
+
+## Python Dependencies
+
+Install all Python dependencies with:
+
+```bat
+pip install -r requirements.txt
+```
+
+This includes:
+
+- backend packages: FastAPI, SQLAlchemy, Pydantic, Uvicorn, python-dotenv
+- AI/dataset packages: TensorFlow CPU, TensorFlow DirectML plugin, NumPy, OpenCV, MediaPipe, scikit-learn, pandas, matplotlib
+
+Frontend dependencies are installed by the same setup command:
+
+```bat
+setup_enviroment.bat
+```
+
+## Environment Variables
+
+Root environment files:
+
+- `.env`
+- `.env.example`
+
+Current prototype note:
+
+- admin access is controlled with `ADMIN_EMAIL`
+- user identity in the app is still prototype-level and header-based via `X-User-Id`
+
+## Important Notes
+
+- The whole repository should use only the root `.venv`.
+- `frontend/node_modules/` is local install output and should not be committed.
+- `RSLdataset/dataset/` and saved models are part of the project data footprint and are intentionally kept separate from dependency folders.
+- There is a single shared Python dependency file at the repo root: `requirements.txt`.
+- If `.venv` was created with a different Python version before, rerun `setup_enviroment.bat` to rebuild it with Python 3.10.
