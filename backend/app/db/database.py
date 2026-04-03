@@ -1,9 +1,10 @@
 import os
+from pathlib import Path
 
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import declarative_base, sessionmaker
 
-from ..core.config import BACKEND_DIR, DEFAULT_SQLITE_DB_PATH
+from ..core.config import BACKEND_DIR, DEFAULT_SQLITE_DB_PATH, PROJECT_DIR
 
 
 # SQLite-only database setup for this prototype
@@ -13,6 +14,21 @@ SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", DEFAULT_SQLITE_URL)
 
 if not SQLALCHEMY_DATABASE_URL.startswith("sqlite:///"):
     raise ValueError("Only SQLite DATABASE_URL values are supported in this prototype.")
+
+
+def _resolve_sqlite_url(url: str) -> str:
+    raw_path = url.removeprefix("sqlite:///")
+    db_path = Path(raw_path)
+    if db_path.is_absolute():
+        resolved_path = db_path
+    else:
+        resolved_path = (PROJECT_DIR / db_path).resolve()
+
+    resolved_path.parent.mkdir(parents=True, exist_ok=True)
+    return f"sqlite:///{resolved_path.as_posix()}"
+
+
+SQLALCHEMY_DATABASE_URL = _resolve_sqlite_url(SQLALCHEMY_DATABASE_URL)
 
 engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
 

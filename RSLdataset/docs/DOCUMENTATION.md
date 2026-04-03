@@ -30,7 +30,7 @@ Create and activate the shared project environment if needed:
 
 ```powershell
 cd C:\Users\IuraHD\Desktop\disertation\rsl
-.\setup_python_env.bat
+.\setup_enviroment.bat
 .\.venv\Scripts\Activate.ps1
 cd .\RSLdataset
 ```
