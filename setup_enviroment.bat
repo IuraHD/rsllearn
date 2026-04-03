@@ -2,6 +2,7 @@
 setlocal
 
 set "ROOT_DIR=%~dp0"
+set "FRONTEND_DIR=%ROOT_DIR%frontend"
 set "REQUIRED_PYTHON=3.10"
 set "VENV_DIR=%ROOT_DIR%.venv"
 set "VENV_PY=%VENV_DIR%\Scripts\python.exe"
@@ -18,6 +19,25 @@ py -%REQUIRED_PYTHON% -c "import sys" >nul 2>nul
 if errorlevel 1 (
     echo Python %REQUIRED_PYTHON%.x is not available through the Windows launcher.
     echo Install Python %REQUIRED_PYTHON%.x first.
+    exit /b 1
+)
+
+where node >nul 2>nul
+if errorlevel 1 (
+    echo Node.js was not found.
+    echo Install Node.js and npm first.
+    exit /b 1
+)
+
+where npm >nul 2>nul
+if errorlevel 1 (
+    echo npm was not found.
+    echo Install Node.js and npm first.
+    exit /b 1
+)
+
+if not exist "%FRONTEND_DIR%\package.json" (
+    echo Frontend package.json not found at "%FRONTEND_DIR%\package.json".
     exit /b 1
 )
 
@@ -66,4 +86,15 @@ echo Installing shared Python dependencies...
 python -m pip install -r "%ROOT_DIR%requirements.txt"
 if errorlevel 1 exit /b 1
 
-echo Shared Python environment is ready: "%VENV_DIR%"
+echo Installing frontend dependencies...
+pushd "%FRONTEND_DIR%"
+npm install
+if errorlevel 1 (
+    popd
+    exit /b 1
+)
+popd
+
+echo Shared project environment is ready.
+echo Python venv: "%VENV_DIR%"
+echo Frontend dependencies: "%FRONTEND_DIR%\node_modules"

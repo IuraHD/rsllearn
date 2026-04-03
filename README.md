@@ -47,18 +47,18 @@ rsl/
 ├── frontend/                  # React + Vite frontend
 ├── RSLdataset/                # Dataset, training, and live-testing tools
 ├── requirements.txt           # Shared Python dependencies for the whole repo
-├── setup_python_env.bat       # Creates/rebuilds the shared Python 3.10 environment
+├── setup_enviroment.bat       # Sets up Python and frontend dependencies
 └── start_all.bat              # Starts backend + frontend on Windows
 ```
 
 ## First-Time Setup
 
-### 1. Create the shared Python environment
+### 1. Set up the full project environment
 
 From the repository root:
 
 ```bat
-setup_python_env.bat
+setup_enviroment.bat
 ```
 
 What it does:
@@ -66,13 +66,7 @@ What it does:
 - creates `.venv` with Python 3.10
 - upgrades `pip`
 - installs all Python dependencies needed by both `backend/` and `RSLdataset/`
-
-### 2. Install frontend dependencies
-
-```bat
-cd frontend
-npm install
-```
+- installs frontend npm dependencies in `frontend/node_modules`
 
 ## Running the Project
 
@@ -172,6 +166,12 @@ This includes:
 - backend packages: FastAPI, SQLAlchemy, Pydantic, Uvicorn, python-dotenv
 - AI/dataset packages: TensorFlow CPU, TensorFlow DirectML plugin, NumPy, OpenCV, MediaPipe, scikit-learn, pandas, matplotlib
 
+Frontend dependencies are installed by the same setup command:
+
+```bat
+setup_enviroment.bat
+```
+
 ## Environment Variables
 
 Root environment files:
@@ -190,4 +190,4 @@ Current prototype note:
 - `frontend/node_modules/` is local install output and should not be committed.
 - `RSLdataset/dataset/` and saved models are part of the project data footprint and are intentionally kept separate from dependency folders.
 - There is a single shared Python dependency file at the repo root: `requirements.txt`.
-- If `.venv` was created with a different Python version before, rerun `setup_python_env.bat` to rebuild it with Python 3.10.
+- If `.venv` was created with a different Python version before, rerun `setup_enviroment.bat` to rebuild it with Python 3.10.
