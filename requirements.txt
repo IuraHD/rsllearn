@@ -1,0 +1,16 @@
+# Shared Python environment for the whole repository.
+# Use Python 3.10.x so the dataset toolkit and backend can run from one venv.
+
+fastapi==0.129.0
+uvicorn==0.40.0
+sqlalchemy==2.0.46
+pydantic==2.12.5
+python-dotenv==1.2.1
+numpy==1.26.4
+tensorflow-cpu==2.10.0
+tensorflow-directml-plugin==0.4.0.dev230202
+opencv-contrib-python==4.10.0.84
+mediapipe==0.10.32
+scikit-learn==1.7.2
+pandas==2.3.3
+matplotlib==3.10.8

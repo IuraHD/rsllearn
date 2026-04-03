@@ -18,7 +18,7 @@ The system uses a relational SQLite database with the following core entities:
 
 ## 🔒 Security Model (Prototype)
 As this is a dissertation prototype, security is implemented as a "Proof of Concept":
-- **Passwords**: Hashed using `passlib` with `bcrypt`.
+- **Passwords**: Stored with prototype-only plain string comparison. This repo intentionally does not use the previous hashing stack anymore.
 - **Session**: Client-side persistence of the `userId`.
 - **Identity Integrity**: Middleware checks for the `X-User-Id` header on protected routes.
 - **Admin Access**: Hard-coded environment variable check (`ADMIN_EMAIL`) ensures only the designated tester can access the content management system.
