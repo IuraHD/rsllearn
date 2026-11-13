@@ -249,3 +249,20 @@ The current version uses a lightweight prototype identity model:
 <p align="center">
   <em>Developed as a dissertation artefact for Romanian Sign Language learning and accessibility research.</em>
 </p>
+
+---
+
+## License and reuse
+
+Copyright (c) 2026 Iurie Virlan. **All rights reserved** for the original work
+owned by the author. This is a publicly viewable proprietary dissertation
+project, not an open-source release.
+
+No broad reuse rights are granted. Uses of the original materials that require
+the author's consent require prior written permission, subject to applicable
+law and GitHub's applicable Terms of Service, including its viewing and forking
+permissions. See [LICENSE](./LICENSE) for the full notice.
+
+Third-party dependencies, models, datasets, media, and other third-party
+materials retain their respective licenses and rights; this notice does not
+claim ownership of or relicense those materials.
